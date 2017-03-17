@@ -1,2 +1,5 @@
 #Exclude BUILD directory
 /lora-nodeOTP/BUILD/*
+/lora-nodeOTP/LoRaWAN-lib/*
+/lora-nodeOTP/mbed-os/*
+/lora-nodeOTP/SX1272Lib/*
