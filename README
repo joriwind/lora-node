@@ -1,0 +1,39 @@
+# Using the toolchain mbed-cli for development
+source: https://github.com/ARMmbed/mbed-cli#using-mbed-cli
+
+Updating
+
+Serial Communication with a PC:
+    Windows - Look under the "Ports" section in "Device Manager" (''Start -> Control Panel -> System -> Hardware -> Device Manager''). The name will be ''mbed Serial Port (COMx)'', where ''x'' is the number of the COM port allocated.
+    Mac OS X - Use the command ls /dev/tty.usbmodem*
+    Linux - Use the command ls /dev/ttyACM*
+    source: https://developer.mbed.org/handbook/SerialPC
+
+    settings: vt100, 115200 baud, flow control=none
+    --> F3 for view
+
+Semtech SX1272 library & examples
+    source: https://developer.mbed.org/components/SX1272MB2xAS/
+    - LoRaWAN-demo-72:
+        Device EUI:         1122334455667788
+        Application EUI:    0000000000000000
+        Application key:    2b7e151628aed2a6abf7158809cf4f3c
+        source: https://developer.mbed.org/teams/Semtech/code/LoRaWAN-demo-72/
+        
+        data:
+        {"reference": "abcd1234","confirmed": true,"devEUI": "0202020202020202","fPort": 10,"data": "...."}
+
+        Command line mosquitto clien:
+        Listen packet (rx):
+            mosquitto_sub -t "application/2/node/+/rx" -v -d
+            source: https://docs.loraserver.io/loraserver/receiving-data/
+        Send packet (tx):
+            mosquitto_pub -t "application/2/node/11223344557788/tx" -m "{ \"reference\" : \"0754bf86\" , \"confirmed\" : true, \"devEUI\" : \"1122334455667788\", \"fPort\" : 15 , \"data\": \"PING\"}" -d
+            source: https://docs.loraserver.io/loraserver/sending-data/
+
+Other LoRa implementations
+- EMCU
+    source: http://www.emcu.eu/lora/
+
+
+
