@@ -19,6 +19,10 @@
 
 /**  Channel definition   **/
 /*!
+ * Indicates if the end-device is to be connected to a private or public network
+ */
+#define LORAWAN_PUBLIC_NETWORK                      true
+/*!
  * LoRaWAN Adaptive Data Rate
  *
  * \remark Please note that when ADR is enabled the end-device should be static

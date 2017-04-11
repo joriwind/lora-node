@@ -13,7 +13,8 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
  */
 LoRaMacPrimitives_t LoRaMacPrimitives;
 LoRaMacCallback_t LoRaMacCallbacks;
-LoRaMacStatus_t Status;
+MibRequestConfirm_t mibReq;
+LoRaMacStatus_t status;
 static uint8_t DevEui[] = LORAWAN_DEV_EUI;
 static uint8_t AppEui[] = LORAWAN_APP_EUI;
 static uint8_t AppKey[] = LORAWAN_APP_KEY;
@@ -24,7 +25,6 @@ DigitalOut ledConnected(LED1);
 
 //Control function of program
 int main( void ){
-    LoRaMacStatus_t status;
 
     //Board initilization
     BoardInit();
@@ -35,8 +35,8 @@ int main( void ){
     LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
     LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
     LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
-    Status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
-    if( Status == LORAMAC_STATUS_OK )
+    status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
+    if( status == LORAMAC_STATUS_OK )
     {
         // Initialization successful
     }else{
@@ -49,9 +49,6 @@ int main( void ){
     mibReq.Type = MIB_PUBLIC_NETWORK;
     mibReq.Param.EnablePublicNetwork = LORAWAN_PUBLIC_NETWORK;
     LoRaMacMibSetRequestConfirm( &mibReq );
-
-#if defined( USE_BAND_868 )
-    LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 
 #if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
     LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
