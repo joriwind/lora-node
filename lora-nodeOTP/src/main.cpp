@@ -19,13 +19,16 @@ static uint8_t DevEui[] = LORAWAN_DEV_EUI;
 static uint8_t AppEui[] = LORAWAN_APP_EUI;
 static uint8_t AppKey[] = LORAWAN_APP_KEY;
 
+/* Debugging methods */
 //Indication led, indicates if joined a network
 DigitalOut ledConnected(LED1);
+//Serial state indication
+Serial debugSerial(USBTX, USBRX);
 
 
 //Control function of program
 int main( void ){
-
+    debugSerial.printf("START: Starting lora node\n");
     //Board initilization
     BoardInit();
     ledConnected = 0;
@@ -38,8 +41,10 @@ int main( void ){
     status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
     if( status == LORAMAC_STATUS_OK )
     {
+        debugSerial.printf("LoRaMAC: Initialization successful\n");
         // Initialization successful
     }else{
+        debugSerial.printf("LoRaMAC: Initialization FAILED\n");
         return -1;
     }
     mibReq.Type = MIB_ADR;
@@ -79,6 +84,10 @@ int main( void ){
     if( status == LORAMAC_STATUS_OK )
     {
         // Join request was send successfully
+        debugSerial.printf("LoRaMAC: Join request was send successfully\n");
+    } else {
+        debugSerial.printf("LoRaMAC: Join request send FAILED\n");
+        return -1;
     }
 
     //Processing loop
@@ -110,6 +119,7 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
             {
                 // Status is OK, node has joined the network
                 ledConnected = 1;
+                debugSerial.printf("LoRaMAC: Node successfully joined network\n");
                 break;
             }
             case MLME_LINK_CHECK:
