@@ -3,3 +3,4 @@
 #Exclude library files
 /lora-nodeOTP/LoRaWAN-lib/*
 /lora-nodeOTP/SX1272Lib/*
+/lora-nodeOTP/mbed_settings.pyc
