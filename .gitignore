@@ -5,3 +5,5 @@
 /lora-nodeOTP/SX1272Lib/*
 /lora-nodeOTP/mbed/*
 /lora-nodeOTP/mbed_settings.pyc
+/lora-nodeOTP/.*
+/.*
