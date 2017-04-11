@@ -25,6 +25,9 @@ int main( void ){
     MlmeReq_t mlmeReq;
     LoRaMacStatus_t status;
 
+    //Board initilization
+    BoardInit();
+
     //LoRaWAN MAC layer initialisation
     LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
     LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
