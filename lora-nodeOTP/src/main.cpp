@@ -14,19 +14,21 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
 LoRaMacPrimitives_t LoRaMacPrimitives;
 LoRaMacCallback_t LoRaMacCallbacks;
 LoRaMacStatus_t Status;
-
-
 static uint8_t DevEui[] = LORAWAN_DEV_EUI;
 static uint8_t AppEui[] = LORAWAN_APP_EUI;
 static uint8_t AppKey[] = LORAWAN_APP_KEY;
 
+//Indication led, indicates if joined a network
+DigitalOut ledConnected(LED1);
+
+
 //Control function of program
 int main( void ){
-    MlmeReq_t mlmeReq;
     LoRaMacStatus_t status;
 
     //Board initilization
     BoardInit();
+    ledConnected = 0;
 
     //LoRaWAN MAC layer initialisation
     LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
@@ -37,9 +39,37 @@ int main( void ){
     if( Status == LORAMAC_STATUS_OK )
     {
         // Initialization successful
+    }else{
+        return -1;
     }
+    mibReq.Type = MIB_ADR;
+    mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
+    LoRaMacMibSetRequestConfirm( &mibReq );
+
+    mibReq.Type = MIB_PUBLIC_NETWORK;
+    mibReq.Param.EnablePublicNetwork = LORAWAN_PUBLIC_NETWORK;
+    LoRaMacMibSetRequestConfirm( &mibReq );
+
+#if defined( USE_BAND_868 )
+    LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
+
+#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
+    LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
+    LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
+    LoRaMacChannelAdd( 5, ( ChannelParams_t )LC6 );
+    LoRaMacChannelAdd( 6, ( ChannelParams_t )LC7 );
+    LoRaMacChannelAdd( 7, ( ChannelParams_t )LC8 );
+    LoRaMacChannelAdd( 8, ( ChannelParams_t )LC9 );
+    LoRaMacChannelAdd( 9, ( ChannelParams_t )LC10 );
+
+    mibReq.Type = MIB_RX2_CHANNEL;
+    mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+    LoRaMacMibSetRequestConfirm( &mibReq );
+#endif
+
 
     //LoRaWAN over-the-air activation
+    MlmeReq_t mlmeReq;
     // Setup the request type
     mlmeReq.Type = MLME_JOIN;
     // Fill the join parameters
@@ -52,6 +82,12 @@ int main( void ){
     if( status == LORAMAC_STATUS_OK )
     {
         // Join request was send successfully
+    }
+
+    //Processing loop
+    while(1)
+    {
+        //Waiting for requests
     }
 }
 
@@ -76,6 +112,7 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
             case MLME_JOIN:
             {
                 // Status is OK, node has joined the network
+                ledConnected = 1;
                 break;
             }
             case MLME_LINK_CHECK:
