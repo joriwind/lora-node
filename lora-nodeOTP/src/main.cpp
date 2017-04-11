@@ -100,12 +100,70 @@ int main( void ){
 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 {
-  // Implementation of the MCPS-Confirm primitive
+    // Implementation of the MCPS-Confirm primitive
+    if( McpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK )
+    {
+        debugSerial.printf("McpsConfirm: status NOT OK!\n");
+        return;
+    }
+    switch( McpsConfirm->McpsRequest ){
+        case MCPS_UNCONFIRMED:
+        {
+            
+            break;
+        }
+        case MCPS_CONFIRMED:
+        {
+            
+            //McpsConfirm->AckReceived;
+            break;
+        }
+        case MCPS_PROPRIETARY:
+        {
+            break;
+        }
+        default:
+            break;
+    }
+
 }
 
 static void McpsIndication( McpsIndication_t *McpsIndication )
 {
-  // Implementation of the MCPS-Indication primitive
+    // Implementation of the MCPS-Indication primitive
+    if( McpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ){
+        debugSerial.printf("McpsIndication: status NOT OK!\n");
+        return;
+    }
+
+    switch( McpsIndication->McpsIndication ){
+        case MCPS_UNCONFIRMED:
+        {
+            break;
+        }
+        case MCPS_CONFIRMED:
+        {
+            break;
+        }
+        case MCPS_PROPRIETARY:
+        {
+            break;
+        }
+        case MCPS_MULTICAST:
+        {
+            break;
+        }
+        default:
+            break;
+    }
+  switch( McpsIndication->Port ){
+    case 1:
+        debugSerial.printf("McpsIndication: indication on port 1\n");
+        break;
+    default:
+        debugSerial.printf("McpsIndication: indication on UNKNOWN port\n");
+        break;
+  }
 }
 
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
