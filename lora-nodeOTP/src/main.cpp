@@ -1,6 +1,7 @@
 #include "mbed.h"
 #include "board.h"
 #include "LoRaMac.h"
+#include "comissioning.h"
 
 /* Callback functions for LoRaWAN-lib */
 static void McpsConfirm( McpsConfirm_t *McpsConfirm );
@@ -43,7 +44,7 @@ int main( void ){
     mlmeReq.Req.Join.AppEui = AppEui;
     mlmeReq.Req.Join.AppKey = AppKey;
     // Add the number of trials for the join request
-    mlmeReq.Req.Join.NbTrials = 3;
+    //mlmeReq.Req.Join.NbTrials = 3; //Not available variable in struct MlmeReq_t
     status = LoRaMacMlmeRequest( &mlmeReq );
     if( status == LORAMAC_STATUS_OK )
     {

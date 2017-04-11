@@ -5,6 +5,8 @@
 #include "system/timer.h"
 #include "debug.h"
 #include "system/utilities.h"
+#include "system/crypto/aes.h"
+#include "system/crypto/cmac.h"
 #include "sx1272-hal.h"
 
 #define USE_BAND_868
