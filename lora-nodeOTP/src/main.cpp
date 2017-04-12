@@ -100,6 +100,7 @@ int main( void ){
 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 {
+    debugSerial.printf("McpsConfirm: Status: %i; request: %i\n", McpsConfirm->Status, McpsConfirm->McpsRequest);
     // Implementation of the MCPS-Confirm primitive
     if( McpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK )
     {
@@ -130,6 +131,7 @@ static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 
 static void McpsIndication( McpsIndication_t *McpsIndication )
 {
+    debugSerial.printf("McpsIndication: Status: %i; request: %i\n", McpsIndication->Status, McpsIndication->McpsIndication);
     // Implementation of the MCPS-Indication primitive
     if( McpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ){
         debugSerial.printf("McpsIndication: status NOT OK!\n");
@@ -168,6 +170,7 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
 
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
 {
+    debugSerial.printf("MlmeConfirm: Status: %i; request: %i\n", MlmeConfirm->Status, MlmeConfirm->MlmeRequest);
   // Implementation of the MLME-Confirm primitive
   if( MlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
     {
