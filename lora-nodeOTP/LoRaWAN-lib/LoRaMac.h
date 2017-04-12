@@ -566,41 +566,41 @@ typedef enum eLoRaMacEventInfoStatus
     /*!
      * An error occured during the execution of the service
      */
-    LORAMAC_EVENT_INFO_STATUS_ERROR,
+    LORAMAC_EVENT_INFO_STATUS_ERROR = 1,
     /*!
      * A Tx timeouit occured
      */
-    LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT,
+    LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT = 2,
     /*!
      * An Rx timeout occured on receive window 2
      */
-    LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT,
+    LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT = 3,
     /*!
      * An Rx error occured on receive window 2
      */
-    LORAMAC_EVENT_INFO_STATUS_RX2_ERROR,
+    LORAMAC_EVENT_INFO_STATUS_RX2_ERROR = 4,
     /*!
      * An error occured in the join procedure
      */
-    LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL,
+    LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL = 5,
     /*!
      * A frame with an invalid downlink counter was received. The
      * downlink counter of the frame was equal to the local copy
      * of the downlink counter of the node.
      */
-    LORAMAC_EVENT_INFO_STATUS_DOWNLINK_REPEATED,
+    LORAMAC_EVENT_INFO_STATUS_DOWNLINK_REPEATED = 6,
     /*!
      * The node has lost MAX_FCNT_GAP or more frames.
      */
-    LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
+    LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS = 7,
     /*!
      * An address error occured
      */
-    LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL,
+    LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL = 8,
     /*!
      * message integrity check failure
      */
-    LORAMAC_EVENT_INFO_STATUS_MIC_FAIL,
+    LORAMAC_EVENT_INFO_STATUS_MIC_FAIL = 9,
 }LoRaMacEventInfoStatus_t;
 
 /*!
