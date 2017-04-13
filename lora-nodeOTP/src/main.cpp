@@ -246,14 +246,11 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
                 break;
             
             default:
-                if(isNetworkJoined()){
-
-                }
                 break;
         }
     }else{  //LoRaWAN managementconfirm NOK
         if(!isNetworkJoined()){
-            gDevState = DEV_STATE_JOIN;  //Retry joining
+            gDevState = DEV_STATE_INIT;  //Retry everything
         }
     }
 }
