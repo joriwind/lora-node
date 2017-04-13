@@ -3,217 +3,141 @@
 #include "radio.h"
 
 #include "LoRaMac.h"
+#include "LoRaMacTest.h"
 #include "comissioning.h"
 
-
-/*!
- * Default datarate
- */
-#define LORAWAN_DEFAULT_DATARATE                    DR_0
-
-/*!
- * LoRaWAN confirmed messages
- */
-#define LORAWAN_CONFIRMED_MSG_ON                    true
-
-/*!
- * LoRaWAN Adaptive Data Rate
- *
- * \remark Please note that when ADR is enabled the end-device should be static
- */
-#define LORAWAN_ADR_ON                              1
-
-#if defined( USE_BAND_868 )
-
-#include "LoRaMacTest.h"
-
-/*!
- * LoRaWAN ETSI duty cycle control enable/disable
- *
- * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
- */
-#define LORAWAN_DUTYCYCLE_ON                        true
-
-#define USE_SEMTECH_DEFAULT_CHANNEL_LINEUP          1
-
-#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
-
-#define LC4                { 867100000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#define LC5                { 867300000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#define LC6                { 867500000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#define LC7                { 867700000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#define LC8                { 867900000, { ( ( DR_5 << 4 ) | DR_0 ) }, 0 }
-#define LC9                { 868800000, { ( ( DR_7 << 4 ) | DR_7 ) }, 2 }
-#define LC10               { 868300000, { ( ( DR_6 << 4 ) | DR_6 ) }, 1 }
-
-#endif
-
-#endif
-
-/*!
- * LoRaWAN application port
- */
-#define LORAWAN_APP_PORT                            15
-
-/*!
- * User application data buffer size
- */
-#if ( LORAWAN_CONFIRMED_MSG_ON == 1 )
-#define LORAWAN_APP_DATA_SIZE                       6
-
-#else
-#define LORAWAN_APP_DATA_SIZE                       1
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Callback functions for LoRaWAN-lib */
+/* Function declarations */
+//Callback functions for LoRaWAN-lib 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm );
 static void McpsIndication( McpsIndication_t *McpsIndication );
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
+//Helper functions
+static int isNetworkJoined( void );
+void waitfor(int s);
 
-static int OnTxNextPacketTimerEvent( void );
 /*
  * Configuration variables for LoRaWAN-lib
  */
 LoRaMacPrimitives_t LoRaMacPrimitives;
 LoRaMacCallback_t LoRaMacCallbacks;
-MibRequestConfirm_t mibReq;
-LoRaMacStatus_t status;
-static uint8_t DevEui[] = LORAWAN_DEVICE_EUI;
-static uint8_t AppEui[] = LORAWAN_APPLICATION_EUI;
-static uint8_t AppKey[] = LORAWAN_APPLICATION_KEY;
+static uint8_t gDevEui[] = LORAWAN_DEVICE_EUI;
+static uint8_t gAppEui[] = LORAWAN_APPLICATION_EUI;
+static uint8_t gAppKey[] = LORAWAN_APPLICATION_KEY;
 
 /* Debugging methods */
 //Serial state indication
 Serial debugSerial(USBTX, USBRX);
 
+//Device state
+enum DevState
+{
+    DEV_STATE_INIT,
+    DEV_STATE_JOIN,
+    DEV_STATE_WAIT
+};
+static DevState gDevState = DEV_STATE_INIT;
 
 //Control function of program
 int main( void ){
-    LoRaMacPrimitives_t LoRaMacPrimitives;
-    LoRaMacCallback_t LoRaMacCallbacks;
-    MibRequestConfirm_t mibReq;
-    LoRaMacStatus_t status;
-    debugSerial.printf("START: Starting lora node\n");
-    //Board initilization
-    BoardInit();
-
-    //LoRaWAN MAC layer initialisation
-    LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
-    LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
-    LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
-    LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
-    status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
-    if( status == LORAMAC_STATUS_OK )
-    {
-        debugSerial.printf("LoRaMAC: Initialization successful\n");
-        // Initialization successful
-    }else{
-        debugSerial.printf("LoRaMAC: Initialization FAILED\n");
-        return -1;
-    }
-    mibReq.Type = MIB_ADR;
-    mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
-    LoRaMacMibSetRequestConfirm( &mibReq );
-
-    mibReq.Type = MIB_PUBLIC_NETWORK;
-    mibReq.Param.EnablePublicNetwork = LORAWAN_PUBLIC_NETWORK;
-    LoRaMacMibSetRequestConfirm( &mibReq );
-
-    LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
-
-#if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
-    LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
-    LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
-    LoRaMacChannelAdd( 5, ( ChannelParams_t )LC6 );
-    LoRaMacChannelAdd( 6, ( ChannelParams_t )LC7 );
-    LoRaMacChannelAdd( 7, ( ChannelParams_t )LC8 );
-    LoRaMacChannelAdd( 8, ( ChannelParams_t )LC9 );
-    LoRaMacChannelAdd( 9, ( ChannelParams_t )LC10 );
-
-    mibReq.Type = MIB_RX2_CHANNEL;
-    mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
-    LoRaMacMibSetRequestConfirm( &mibReq );
-#endif
-
-
-    //LoRaWAN over-the-air activation
-    MlmeReq_t mlmeReq;
-    // Setup the request type
-    mlmeReq.Type = MLME_JOIN;
-    // Fill the join parameters
-    mlmeReq.Req.Join.DevEui = DevEui;
-    mlmeReq.Req.Join.AppEui = AppEui;
-    mlmeReq.Req.Join.AppKey = AppKey;
-    // Add the number of trials for the join request
-    //mlmeReq.Req.Join.NbTrials = 3; //Not available variable in struct MlmeReq_t
-    status = LoRaMacMlmeRequest( &mlmeReq );
-    if( status == LORAMAC_STATUS_OK )
-    {
-        // Join request was send successfully
-        debugSerial.printf("LoRaMAC: Join request was send successfully\n");
-    } else {
-        debugSerial.printf("LoRaMAC: Join request send FAILED\n");
-        return -1;
-    }
-    Timer t;
-    //Processing loop
-    while(1)
-    {
-        t.start();
-        while(t.read() < 4){
-
-        }
-        t.stop();
-        debugSerial.printf("Waited for seconds: %f\n", t.read());
-        t.reset();
-        //Waiting for requests
-        if(!OnTxNextPacketTimerEvent()){
-            //LoRaWAN over-the-air activation
-            MlmeReq_t mlmeReq;
-            // Setup the request type
-            mlmeReq.Type = MLME_JOIN;
-            // Fill the join parameters
-            mlmeReq.Req.Join.DevEui = DevEui;
-            mlmeReq.Req.Join.AppEui = AppEui;
-            mlmeReq.Req.Join.AppKey = AppKey;
-            // Add the number of trials for the join request
-            //mlmeReq.Req.Join.NbTrials = 3; //Not available variable in struct MlmeReq_t
-            status = LoRaMacMlmeRequest( &mlmeReq );
-            if( status == LORAMAC_STATUS_OK )
+    while(1){
+        switch(gDevState){
+            case DEV_STATE_INIT:
             {
-                // Join request was send successfully
-                debugSerial.printf("LoRaMAC: Join request was send successfully\n");
-            } else {
-                debugSerial.printf("LoRaMAC: Join request send FAILED\n");
+                MibRequestConfirm_t mibReq;
+                LoRaMacStatus_t status;
+
+                debugSerial.printf("START: Starting lora node\n");
+                
+                //Board initilization
+                BoardInit();
+
+                //LoRaWAN MAC layer initialisation
+                LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
+                LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
+                LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
+                LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
+                status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
+                if( status == LORAMAC_STATUS_OK )
+                {
+                    debugSerial.printf("LoRaMAC: Initialization successful\n");
+                    // Initialization successful
+                }else{
+                    debugSerial.printf("LoRaMAC: Initialization FAILED\n");
+                    debugSerial.printf("LoRaMAC: Trying again in 1 second\n");
+                    waitfor(1);//Wait for 1 second -> try again;
+                    gDevState = DEV_STATE_INIT;
+                    break;
+                }
+                //Adaptive datarate
+                mibReq.Type = MIB_ADR;
+                mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
+                LoRaMacMibSetRequestConfirm( &mibReq );
+                //Public network
+                mibReq.Type = MIB_PUBLIC_NETWORK;
+                mibReq.Param.EnablePublicNetwork = LORAWAN_PUBLIC_NETWORK;
+                LoRaMacMibSetRequestConfirm( &mibReq );
+                //ETSI duty cycle control enable
+                LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
+
+            #if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
+                LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
+                LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
+                LoRaMacChannelAdd( 5, ( ChannelParams_t )LC6 );
+                LoRaMacChannelAdd( 6, ( ChannelParams_t )LC7 );
+                LoRaMacChannelAdd( 7, ( ChannelParams_t )LC8 );
+                LoRaMacChannelAdd( 8, ( ChannelParams_t )LC9 );
+                LoRaMacChannelAdd( 9, ( ChannelParams_t )LC10 );
+
+                mibReq.Type = MIB_RX2_CHANNEL;
+                mibReq.Param.Rx2Channel = ( Rx2ChannelParams_t ){ 869525000, DR_3 };
+                LoRaMacMibSetRequestConfirm( &mibReq );
+            #endif
+
+                gDevState = DEV_STATE_JOIN;
+                break;
+            }
+            case DEV_STATE_JOIN:
+            {
+                //LoRaWAN over-the-air activation
+                MlmeReq_t mlmeReq;
+                LoRaMacStatus_t status;
+
+                // Setup the request type
+                mlmeReq.Type = MLME_JOIN;
+                // Fill the join parameters
+                mlmeReq.Req.Join.DevEui = gDevEui;
+                mlmeReq.Req.Join.AppEui = gAppEui;
+                mlmeReq.Req.Join.AppKey = gAppKey;
+                // Add the number of trials for the join request
+                //mlmeReq.Req.Join.NbTrials = 3; //Not available variable in struct MlmeReq_t
+                status = LoRaMacMlmeRequest( &mlmeReq );
+                if( status == LORAMAC_STATUS_OK )
+                {
+                    // Join request was send successfully
+                    debugSerial.printf("LoRaMAC: Join request was send successfully\n");
+                } else {
+                    debugSerial.printf("LoRaMAC: Join request send FAILED\n");
+                    debugSerial.printf("LoRaMAC: Trying again in 1s\n");
+                    waitfor(1);
+                    gDevState = DEV_STATE_JOIN;
+                    break;
+                }
+                gDevState = DEV_STATE_WAIT;
+                break;
+            }
+            case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
+            {
                 
             }
         }
     }
-    return 0;
+    
 }
 
 /*!
  * \brief Function executed on TxNextPacket Timeout event
  */
-static int OnTxNextPacketTimerEvent( void )
+static int isNetworkJoined( void )
 {
     MibRequestConfirm_t mibReq;
     LoRaMacStatus_t status;
@@ -226,12 +150,12 @@ static int OnTxNextPacketTimerEvent( void )
         if( mibReq.Param.IsNetworkJoined == true )
         {
             
-            debugSerial.printf("OnTxNextPacketTimerEvent: already joined\n");
+            debugSerial.printf("isJoined: already joined the LoRaWAN network\n");
             return 1;
         }
         else
         {
-            debugSerial.printf("OnTxNextPacketTimerEvent: next try to join!\n");
+            debugSerial.printf("isJoined: not yet joined the LoRaWAN network!\n");
             return 0;
         }
     }
@@ -312,25 +236,33 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
 {
     debugSerial.printf("MlmeConfirm: Status: %i; request: %i\n", MlmeConfirm->Status, MlmeConfirm->MlmeRequest);
-  // Implementation of the MLME-Confirm primitive
-  if( MlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK )
-    {
+    // Implementation of the MLME-Confirm primitive
+    if( MlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK ){
         switch( MlmeConfirm->MlmeRequest )
         {
             case MLME_JOIN:
-            {
                 // Status is OK, node has joined the network
                 debugSerial.printf("LoRaMAC: Node successfully joined network\n");
                 break;
-            }
-            case MLME_LINK_CHECK:
-            {
-                // Check DemodMargin
-                // Check NbGateways
-                break;
-            }
+            
             default:
+                if(isNetworkJoined()){
+
+                }
                 break;
         }
+    }else{  //LoRaWAN managementconfirm NOK
+        if(isNetworkJoined()){
+            gDevState = DEV_STATE_JOIN;  //Retry joining
+        }
     }
+}
+
+void waitfor(int s){
+    Timer t;
+    t.start();
+    while(t.read() < s);
+    t.stop();
+    debugSerial.printf("Waited for seconds: %f\n", t.read());
+    t.reset();
 }
