@@ -14,6 +14,7 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
 //Helper functions
 static int isNetworkJoined( void );
 void waitfor(int s);
+bool sendFrame( uint8_t port, uint8_t* payload, int size );
 
 /*
  * Configuration variables for LoRaWAN-lib
@@ -223,10 +224,17 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
         default:
             break;
     }
-  switch( McpsIndication->Port ){
+  switch( McpsIndication->Port ){ //requests or actions
     case 1:
         gDebugSerial.printf("McpsIndication: indication on port 1\n");
         break;
+    case 20:
+        {
+            gDebugSerial.printf("McpsIndication: indication on port 20\n");
+            uint8_t payload[2] = {0,1};
+            sendFrame(20, payload, 2);
+            break;
+        }
     default:
         gDebugSerial.printf("McpsIndication: indication on UNKNOWN port\n");
         break;
@@ -262,4 +270,42 @@ void waitfor(int s){
     t.stop();
     gDebugSerial.printf("Waited for seconds: %f\n", t.read());
     t.reset();
+}
+
+bool sendFrame( uint8_t port, uint8_t* payload, int size )
+{
+    McpsReq_t mcpsReq;
+    LoRaMacTxInfo_t txInfo;
+    
+    if( LoRaMacQueryTxPossible( size, &txInfo ) != LORAMAC_STATUS_OK )
+    {
+        gDebugSerial.printf("sendFrame: LoRaMAC bussy!\n");
+        gDebugSerial.printf("sendFrame: flushing mac\n!", size);
+        // Send empty frame in order to flush MAC commands
+        mcpsReq.Type = MCPS_UNCONFIRMED;
+        mcpsReq.Req.Unconfirmed.fBuffer = NULL;
+        mcpsReq.Req.Unconfirmed.fBufferSize = 0;
+        mcpsReq.Req.Unconfirmed.Datarate = DR_0;
+
+    }
+    else
+    {
+        gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
+
+        mcpsReq.Type = MCPS_CONFIRMED;  //Confirmed message
+        mcpsReq.Req.Confirmed.fPort = port;
+        mcpsReq.Req.Confirmed.fBuffer = payload;
+        mcpsReq.Req.Confirmed.fBufferSize = size;
+        mcpsReq.Req.Confirmed.NbTrials = 8;
+        mcpsReq.Req.Confirmed.Datarate = DR_0;
+    }
+
+    gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
+    if( LoRaMacMcpsRequest( &mcpsReq ) == LORAMAC_STATUS_OK )
+    {
+        if(mcpsReq.Type == MCPS_UNCONFIRMED){
+            return false;
+        }
+    }
+    return true;
 }
