@@ -26,7 +26,7 @@ static uint8_t gAppKey[] = LORAWAN_APPLICATION_KEY;
 
 /* Debugging methods */
 //Serial state indication
-Serial debugSerial(USBTX, USBRX);
+Serial gDebugSerial(USBTX, USBRX);
 
 //Device state
 enum DevState
@@ -46,7 +46,7 @@ int main( void ){
                 MibRequestConfirm_t mibReq;
                 LoRaMacStatus_t status;
 
-                debugSerial.printf("START: Starting lora node\n");
+                gDebugSerial.printf("START: Starting lora node\n");
                 
                 //Board initilization
                 BoardInit();
@@ -59,11 +59,11 @@ int main( void ){
                 status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
                 if( status == LORAMAC_STATUS_OK )
                 {
-                    debugSerial.printf("LoRaMAC: Initialization successful\n");
+                    gDebugSerial.printf("LoRaMAC: Initialization successful\n");
                     // Initialization successful
                 }else{
-                    debugSerial.printf("LoRaMAC: Initialization FAILED\n");
-                    debugSerial.printf("LoRaMAC: Trying again in 1 second\n");
+                    gDebugSerial.printf("LoRaMAC: Initialization FAILED\n");
+                    gDebugSerial.printf("LoRaMAC: Trying again in 1 second\n");
                     waitfor(1);//Wait for 1 second -> try again;
                     gDevState = DEV_STATE_INIT;
                     break;
@@ -114,10 +114,10 @@ int main( void ){
                 if( status == LORAMAC_STATUS_OK )
                 {
                     // Join request was send successfully
-                    debugSerial.printf("LoRaMAC: Join request was send successfully\n");
+                    gDebugSerial.printf("LoRaMAC: Join request was send successfully\n");
                 } else {
-                    debugSerial.printf("LoRaMAC: Join request send FAILED\n");
-                    debugSerial.printf("LoRaMAC: Trying again in 1s\n");
+                    gDebugSerial.printf("LoRaMAC: Join request send FAILED\n");
+                    gDebugSerial.printf("LoRaMAC: Trying again in 1s\n");
                     waitfor(1);
                     gDevState = DEV_STATE_JOIN;
                     break;
@@ -150,12 +150,12 @@ static int isNetworkJoined( void )
         if( mibReq.Param.IsNetworkJoined == true )
         {
             
-            debugSerial.printf("isJoined: already joined the LoRaWAN network\n");
+            gDebugSerial.printf("isJoined: already joined the LoRaWAN network\n");
             return 1;
         }
         else
         {
-            debugSerial.printf("isJoined: not yet joined the LoRaWAN network!\n");
+            gDebugSerial.printf("isJoined: not yet joined the LoRaWAN network!\n");
             return 0;
         }
     }
@@ -165,11 +165,11 @@ static int isNetworkJoined( void )
 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 {
-    debugSerial.printf("McpsConfirm: Status: %i; request: %i\n", McpsConfirm->Status, McpsConfirm->McpsRequest);
+    gDebugSerial.printf("McpsConfirm: Status: %i; request: %i\n", McpsConfirm->Status, McpsConfirm->McpsRequest);
     // Implementation of the MCPS-Confirm primitive
     if( McpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK )
     {
-        debugSerial.printf("McpsConfirm: status NOT OK!\n");
+        gDebugSerial.printf("McpsConfirm: status NOT OK!\n");
         return;
     }
     switch( McpsConfirm->McpsRequest ){
@@ -196,10 +196,10 @@ static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 
 static void McpsIndication( McpsIndication_t *McpsIndication )
 {
-    debugSerial.printf("McpsIndication: Status: %i; request: %i\n", McpsIndication->Status, McpsIndication->McpsIndication);
+    gDebugSerial.printf("McpsIndication: Status: %i; request: %i\n", McpsIndication->Status, McpsIndication->McpsIndication);
     // Implementation of the MCPS-Indication primitive
     if( McpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ){
-        debugSerial.printf("McpsIndication: status NOT OK!\n");
+        gDebugSerial.printf("McpsIndication: status NOT OK!\n");
         return;
     }
 
@@ -225,24 +225,24 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
     }
   switch( McpsIndication->Port ){
     case 1:
-        debugSerial.printf("McpsIndication: indication on port 1\n");
+        gDebugSerial.printf("McpsIndication: indication on port 1\n");
         break;
     default:
-        debugSerial.printf("McpsIndication: indication on UNKNOWN port\n");
+        gDebugSerial.printf("McpsIndication: indication on UNKNOWN port\n");
         break;
   }
 }
 
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
 {
-    debugSerial.printf("MlmeConfirm: Status: %i; request: %i\n", MlmeConfirm->Status, MlmeConfirm->MlmeRequest);
+    gDebugSerial.printf("MlmeConfirm: Status: %i; request: %i\n", MlmeConfirm->Status, MlmeConfirm->MlmeRequest);
     // Implementation of the MLME-Confirm primitive
     if( MlmeConfirm->Status == LORAMAC_EVENT_INFO_STATUS_OK ){
         switch( MlmeConfirm->MlmeRequest )
         {
             case MLME_JOIN:
                 // Status is OK, node has joined the network
-                debugSerial.printf("LoRaMAC: Node successfully joined network\n");
+                gDebugSerial.printf("LoRaMAC: Node successfully joined network\n");
                 break;
             
             default:
@@ -252,7 +252,7 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
                 break;
         }
     }else{  //LoRaWAN managementconfirm NOK
-        if(isNetworkJoined()){
+        if(!isNetworkJoined()){
             gDevState = DEV_STATE_JOIN;  //Retry joining
         }
     }
@@ -263,6 +263,6 @@ void waitfor(int s){
     t.start();
     while(t.read() < s);
     t.stop();
-    debugSerial.printf("Waited for seconds: %f\n", t.read());
+    gDebugSerial.printf("Waited for seconds: %f\n", t.read());
     t.reset();
 }
