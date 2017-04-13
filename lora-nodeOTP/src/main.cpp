@@ -18,8 +18,8 @@ void waitfor(int s);
 /*
  * Configuration variables for LoRaWAN-lib
  */
-LoRaMacPrimitives_t LoRaMacPrimitives;
-LoRaMacCallback_t LoRaMacCallbacks;
+LoRaMacPrimitives_t gLoRaMacPrimitives;
+LoRaMacCallback_t gLoRaMacCallbacks;
 static uint8_t gDevEui[] = LORAWAN_DEVICE_EUI;
 static uint8_t gAppEui[] = LORAWAN_APPLICATION_EUI;
 static uint8_t gAppKey[] = LORAWAN_APPLICATION_KEY;
@@ -52,11 +52,11 @@ int main( void ){
                 BoardInit();
 
                 //LoRaWAN MAC layer initialisation
-                LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
-                LoRaMacPrimitives.MacMcpsIndication = McpsIndication;
-                LoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
-                LoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
-                status = LoRaMacInitialization( &LoRaMacPrimitives, &LoRaMacCallbacks );
+                gLoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
+                gLoRaMacPrimitives.MacMcpsIndication = McpsIndication;
+                gLoRaMacPrimitives.MacMlmeConfirm = MlmeConfirm;
+                gLoRaMacCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
+                status = LoRaMacInitialization( &gLoRaMacPrimitives, &gLoRaMacCallbacks );
                 if( status == LORAMAC_STATUS_OK )
                 {
                     gDebugSerial.printf("LoRaMAC: Initialization successful\n");
