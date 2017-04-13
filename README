@@ -1,6 +1,11 @@
 # Using the toolchain mbed-cli for development
 source: https://github.com/ARMmbed/mbed-cli#using-mbed-cli
 
+How to use:
+    mbed deploy //Download libraries into project folder
+    mbed compile //Compilation of project
+    mbed detect // show available targets and toolchains to use
+
 Updating
 
 Serial Communication with a PC:
