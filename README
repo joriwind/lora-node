@@ -40,5 +40,10 @@ Other LoRa implementations
 - EMCU
     source: http://www.emcu.eu/lora/
 
+REMARKS:
+- Own program not sending packets over LoRa network
+    solution: custom led indicator interfering with communication with LoRa shield(SX1272MB2xAS)
+    pin PA_5 is used for LED1 as well as for SPI interface LoRa shield
+
 
 

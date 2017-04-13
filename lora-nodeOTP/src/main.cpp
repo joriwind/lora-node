@@ -101,8 +101,6 @@ static uint8_t AppEui[] = LORAWAN_APPLICATION_EUI;
 static uint8_t AppKey[] = LORAWAN_APPLICATION_KEY;
 
 /* Debugging methods */
-//Indication led, indicates if joined a network
-DigitalOut ledConnected(LED1);
 //Serial state indication
 Serial debugSerial(USBTX, USBRX);
 
@@ -116,7 +114,6 @@ int main( void ){
     debugSerial.printf("START: Starting lora node\n");
     //Board initilization
     BoardInit();
-    ledConnected = 0;
 
     //LoRaWAN MAC layer initialisation
     LoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
@@ -323,7 +320,6 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
             case MLME_JOIN:
             {
                 // Status is OK, node has joined the network
-                ledConnected = 1;
                 debugSerial.printf("LoRaMAC: Node successfully joined network\n");
                 break;
             }
