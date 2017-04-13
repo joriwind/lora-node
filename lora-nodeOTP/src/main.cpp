@@ -34,7 +34,8 @@ enum DevState
 {
     DEV_STATE_INIT,
     DEV_STATE_JOIN,
-    DEV_STATE_WAIT
+    DEV_STATE_WAIT,
+    DEV_STATE_SEND
 };
 static DevState gDevState = DEV_STATE_INIT;
 
@@ -128,7 +129,20 @@ int main( void ){
             }
             case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
             {
-                
+                waitfor(1);
+                //gDebugSerial.printf("MAIN: gDevState: %i\n", gDevState);
+                break;
+            }
+            case DEV_STATE_SEND:
+            {
+                /*gDebugSerial.printf("MAIN: sending frame\n");
+                uint8_t payload[2] = {0,5};
+                while(!sendFrame(2, payload, 2)){
+                    gDebugSerial.printf("MAIN: retry sending\n");
+                    waitfor(2);
+                }*/
+                gDevState = DEV_STATE_WAIT;
+                break;
             }
         }
     }
@@ -171,27 +185,28 @@ static void McpsConfirm( McpsConfirm_t *McpsConfirm )
     if( McpsConfirm->Status != LORAMAC_EVENT_INFO_STATUS_OK )
     {
         gDebugSerial.printf("McpsConfirm: status NOT OK!\n");
-        return;
+    }else{
+        switch( McpsConfirm->McpsRequest ){
+            case MCPS_UNCONFIRMED:
+            {
+                
+                break;
+            }
+            case MCPS_CONFIRMED:
+            {
+                
+                //McpsConfirm->AckReceived;
+                break;
+            }
+            case MCPS_PROPRIETARY:
+            {
+                break;
+            }
+            default:
+                break;
+        }
     }
-    switch( McpsConfirm->McpsRequest ){
-        case MCPS_UNCONFIRMED:
-        {
-            
-            break;
-        }
-        case MCPS_CONFIRMED:
-        {
-            
-            //McpsConfirm->AckReceived;
-            break;
-        }
-        case MCPS_PROPRIETARY:
-        {
-            break;
-        }
-        default:
-            break;
-    }
+    gDevState = DEV_STATE_SEND; //received some form of confirmation
 
 }
 
@@ -236,7 +251,7 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
             break;
         }
     default:
-        gDebugSerial.printf("McpsIndication: indication on UNKNOWN port\n");
+        gDebugSerial.printf("McpsIndication: indication on UNKNOWN port: %i\n", McpsIndication->Port);
         break;
   }
 }
@@ -251,6 +266,7 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
             case MLME_JOIN:
                 // Status is OK, node has joined the network
                 gDebugSerial.printf("LoRaMAC: Node successfully joined network\n");
+                gDevState = DEV_STATE_SEND;
                 break;
             
             default:
@@ -268,7 +284,7 @@ void waitfor(int s){
     t.start();
     while(t.read() < s);
     t.stop();
-    gDebugSerial.printf("Waited for seconds: %f\n", t.read());
+    //gDebugSerial.printf("Waited for seconds: %f\n", t.read());
     t.reset();
 }
 
@@ -290,7 +306,6 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
     }
     else
     {
-        gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
 
         mcpsReq.Type = MCPS_CONFIRMED;  //Confirmed message
         mcpsReq.Req.Confirmed.fPort = port;
@@ -300,12 +315,14 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
         mcpsReq.Req.Confirmed.Datarate = DR_0;
     }
 
-    gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
+    //gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
     if( LoRaMacMcpsRequest( &mcpsReq ) == LORAMAC_STATUS_OK )
     {
         if(mcpsReq.Type == MCPS_UNCONFIRMED){
             return false;
         }
+    }else{
+        gDebugSerial.printf("sendFrame: DID NOT SEND!\n");
     }
     return true;
 }
