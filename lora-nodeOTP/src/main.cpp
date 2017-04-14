@@ -13,7 +13,6 @@ static void McpsIndication( McpsIndication_t *McpsIndication );
 static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
 //Helper functions
 static int isNetworkJoined( void );
-void waitfor(int s);
 bool sendFrame( uint8_t port, uint8_t* payload, int size );
 
 /*
@@ -66,7 +65,7 @@ int main( void ){
                 }else{
                     gDebugSerial.printf("LoRaMAC: Initialization FAILED\n");
                     gDebugSerial.printf("LoRaMAC: Trying again in 1 second\n");
-                    waitfor(1);//Wait for 1 second -> try again;
+                    wait(1);//Wait for 1 second -> try again;
                     gDevState = DEV_STATE_INIT;
                     break;
                 }
@@ -120,7 +119,7 @@ int main( void ){
                 } else {
                     gDebugSerial.printf("LoRaMAC: Join request send FAILED\n");
                     gDebugSerial.printf("LoRaMAC: Trying again in 1s\n");
-                    waitfor(1);
+                    wait(1);
                     gDevState = DEV_STATE_JOIN;
                     break;
                 }
@@ -129,8 +128,8 @@ int main( void ){
             }
             case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
             {
-                waitfor(1);
-                //gDebugSerial.printf("MAIN: gDevState: %i\n", gDevState);
+                wait(1);
+                //gDebugSerial.printf("MAIN: waiting\n");
                 break;
             }
             case DEV_STATE_SEND:
@@ -139,7 +138,7 @@ int main( void ){
                 uint8_t payload[2] = {0,5};
                 while(!sendFrame(2, payload, 2)){
                     gDebugSerial.printf("MAIN: retry sending\n");
-                    waitfor(2);
+                    wait(2);
                 }*/
                 gDevState = DEV_STATE_WAIT;
                 break;
@@ -274,14 +273,6 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
     }
 }
 
-void waitfor(int s){
-    Timer t;
-    t.start();
-    while(t.read() < s);
-    t.stop();
-    //gDebugSerial.printf("Waited for seconds: %f\n", t.read());
-    t.reset();
-}
 
 bool sendFrame( uint8_t port, uint8_t* payload, int size )
 {
