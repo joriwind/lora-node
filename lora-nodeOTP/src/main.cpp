@@ -2,6 +2,7 @@
 #include "board.h"
 #include "radio.h"
 
+#include "HeComm.h"
 #include "LoRaMac.h"
 #include "LoRaMacTest.h"
 #include "comissioning.h"
@@ -51,6 +52,10 @@ int main( void ){
                 
                 //Board initilization
                 BoardInit();
+
+                //HeComm init
+                uint8_t key[128] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                heCommSetSessionKey(key, 128);
 
                 //LoRaWAN MAC layer initialisation
                 gLoRaMacPrimitives.MacMcpsConfirm = McpsConfirm;
@@ -208,16 +213,16 @@ static void McpsConfirm( McpsConfirm_t *McpsConfirm )
 
 }
 
-static void McpsIndication( McpsIndication_t *McpsIndication )
+static void McpsIndication( McpsIndication_t *mcpsIndication )
 {
-    gDebugSerial.printf("McpsIndication: Status: %i; request: %i\n", McpsIndication->Status, McpsIndication->McpsIndication);
+    gDebugSerial.printf("McpsIndication: Status: %i; request: %i\n", mcpsIndication->Status, mcpsIndication->McpsIndication);
     // Implementation of the MCPS-Indication primitive
-    if( McpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ){
+    if( mcpsIndication->Status != LORAMAC_EVENT_INFO_STATUS_OK ){
         gDebugSerial.printf("McpsIndication: status NOT OK!\n");
         return;
     }
 
-    switch( McpsIndication->McpsIndication ){
+    switch( mcpsIndication->McpsIndication ){
         case MCPS_UNCONFIRMED:
         {
             break;
@@ -237,7 +242,7 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
         default:
             break;
     }
-  switch( McpsIndication->Port ){ //requests or actions
+  switch( mcpsIndication->Port ){ //requests or actions
     case 1:
         gDebugSerial.printf("McpsIndication: indication on port 1\n");
         break;
@@ -248,8 +253,25 @@ static void McpsIndication( McpsIndication_t *McpsIndication )
             sendFrame(20, payload, 2);
             break;
         }
+    case 254:   //HeComm commands
+        {
+            gDebugSerial.printf("McpsIndication: command on HeCOMM; Rx:%i, BufSize: %i\n", mcpsIndication->RxData, mcpsIndication->BufferSize);
+            if(mcpsIndication->RxData == true){
+                if(mcpsIndication->BufferSize == 128){
+                    gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
+                    heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
+                }
+            }
+            
+        }
+    case 255:   //HeComm communication
+        {
+            gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
+            uint8_t payload[2] = {5,7};
+            sendFrame(20, payload, 2);
+        }
     default:
-        gDebugSerial.printf("McpsIndication: indication on UNKNOWN port: %i\n", McpsIndication->Port);
+        gDebugSerial.printf("McpsIndication: indication on UNKNOWN port: %i\n", mcpsIndication->Port);
         break;
   }
 }

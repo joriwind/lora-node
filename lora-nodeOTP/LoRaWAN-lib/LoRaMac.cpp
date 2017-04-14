@@ -22,6 +22,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jä
 #include "LoRaMacCrypto.h"
 #include "LoRaMac.h"
 #include "LoRaMacTest.h"
+#include "HeComm.h"
 
 /*!
  * Maximum PHY layer payload size
@@ -1243,6 +1244,23 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
                             else
                             {
                                 skipIndication = true;
+                            }
+                        }
+                        else if( port == 255)
+                        {
+                            if( fCtrl.Bits.FOptsLen > 0 )
+                            {
+                                // Decode Options field MAC commands. Omit the fPort.
+                                ProcessMacCommands( payload, 8, appPayloadStartIndex - 1, snr );
+                            }
+
+                            heCommDecrypt(payload + appPayloadStartIndex, frameLen, LoRaMacRxPayload, frameLen);
+                            
+                            if( skipIndication == false )
+                            {
+                                McpsIndication.Buffer = LoRaMacRxPayload;
+                                McpsIndication.BufferSize = frameLen;
+                                McpsIndication.RxData = true;
                             }
                         }
                         else
@@ -2987,9 +3005,13 @@ LoRaMacStatus_t PrepareFrame( LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl
             {
                 LoRaMacBuffer[pktHeaderLen++] = framePort;
 
-                if( framePort == 0 )
+                if( framePort == 0 ) //MAC commands
                 {
                     LoRaMacPayloadEncrypt( (uint8_t* ) payload, payloadSize, LoRaMacNwkSKey, LoRaMacDevAddr, UP_LINK, UpLinkCounter, LoRaMacPayload );
+                }
+                else if( framePort == 255) //E2E fog communication
+                {
+                    heCommEncrypt((uint8_t* ) payload, payloadSize, LoRaMacPayload, payloadSize);
                 }
                 else
                 {
