@@ -206,7 +206,6 @@ static void McpsConfirm( McpsConfirm_t *McpsConfirm )
                 break;
         }
     }
-    gDevState = DEV_STATE_SEND; //received some form of confirmation
 
 }
 
@@ -266,16 +265,12 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
             case MLME_JOIN:
                 // Status is OK, node has joined the network
                 gDebugSerial.printf("LoRaMAC: Node successfully joined network\n");
-                gDevState = DEV_STATE_SEND;
                 break;
             
             default:
                 break;
         }
-    }else{  //LoRaWAN managementconfirm NOK
-        if(!isNetworkJoined()){
-            gDevState = DEV_STATE_INIT;  //Retry everything
-        }
+    }else{ 
     }
 }
 
