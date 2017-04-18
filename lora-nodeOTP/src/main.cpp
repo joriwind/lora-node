@@ -254,8 +254,8 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     case 20:
         {
             gDebugSerial.printf("McpsIndication: indication on port 20\n");
-            uint8_t payload[2] = {0,1};
-            sendFrame(20, payload, 2);
+            uint8_t payload[5] = {116,101,115,116,10};
+            sendFrame(20, payload, 5);
             break;
         }
     case 254:   //HeComm commands
@@ -267,13 +267,15 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                     heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
                 }
             }
+            break;
             
         }
     case 255:   //HeComm communication
         {
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
-            uint8_t payload[2] = {5,7};
-            sendFrame(20, payload, 2);
+            uint8_t payload[5] = {116,101,115,116,10};
+            sendFrame(255, payload, 5);
+            break;
         }
     default:
         gDebugSerial.printf("McpsIndication: indication on UNKNOWN port: %i\n", mcpsIndication->Port);
