@@ -85,6 +85,11 @@ int main( void ){
                 //ETSI duty cycle control enable
                 LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 
+                //Class C device
+                mibReq.Type = MIB_DEVICE_CLASS;
+                mibReq.Param.Class = CLASS_C;
+                LoRaMacMibSetRequestConfirm( &mibReq );
+
             #if( USE_SEMTECH_DEFAULT_CHANNEL_LINEUP == 1 ) 
                 LoRaMacChannelAdd( 3, ( ChannelParams_t )LC4 );
                 LoRaMacChannelAdd( 4, ( ChannelParams_t )LC5 );
