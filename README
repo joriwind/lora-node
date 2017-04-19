@@ -46,5 +46,6 @@ REMARKS:
     solution: custom led indicator interfering with communication with LoRa shield(SX1272MB2xAS)
     pin PA_5 is used for LED1 as well as for SPI interface LoRa shield
 
-
+- Crypto additions in libs:
+    solution: LoRaMac.cpp, if fPort is 255 then HeComm crypto is used (line 3041 & 1257)
 
