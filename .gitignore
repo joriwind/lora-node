@@ -11,3 +11,7 @@ lora-nodeCOSE/LoRaWAN-lib/.hg/*
 */mbed_settings.pyc
 */.hg/*
 /.*
+
+#Exclude library files
+lora-nodeCose/SX1272Lib/*
+lora-nodeCose/LoRaWAN-lib/*
