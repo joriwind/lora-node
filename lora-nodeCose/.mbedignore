@@ -1,0 +1,4 @@
+mbed-os/features/mbedtls/src/aes.c
+mbed-os/features/mbedtls/inc/mbedtls/aes.h
+mbed-os/features/mbedtls/src/cmac.c
+mbed-os/features/mbedtls/inc/mbedtls/cmac.h
