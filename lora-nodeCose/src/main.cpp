@@ -7,8 +7,8 @@
 #include "comissioning.h"
 
 
-#include "sn_coap_protocol.h"
-#include "sn_coap_header.h"
+#include "mbed-os/features/FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_protocol.h"
+#include "mbed-os/features/FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_header.h"
 
 /* Function declarations */
 //Callback functions for LoRaWAN-lib 
@@ -267,7 +267,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
             if(mcpsIndication->RxData == true){
                 if(mcpsIndication->BufferSize == 128){
                     gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
-                    heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
+                    //heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
                 }
             }
             break;
