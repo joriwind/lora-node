@@ -1,9 +1,13 @@
 #Exclude BUILD directory
-/lora-nodeOTP/BUILD/*
+*/BUILD/*
+*/.temp/*
 #Exclude library files
 
-/lora-nodeOTP/SX1272Lib/*
-/lora-nodeOTP/mbed/*
-/lora-nodeOTP/mbed_settings.pyc
-/lora-nodeOTP/.*
+*/SX1272Lib/*
+lora-nodeCOSE/LoRaWAN-lib/*
+lora-nodeOTP/LoRaWAN-lib/.hg/*
+lora-nodeCOSE/LoRaWAN-lib/.hg/*
+*/mbed/*
+*/mbed_settings.pyc
+*/.hg/*
 /.*
