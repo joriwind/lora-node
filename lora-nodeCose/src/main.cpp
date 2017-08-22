@@ -11,6 +11,9 @@
 #include "mbed-os/features/FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_protocol.h"
 #include "mbed-os/features/FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_header.h"
 
+//Object security
+#include "obj-sec.h"
+
 /* Function declarations */
 //Callback functions for LoRaWAN-lib 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm );
@@ -133,6 +136,9 @@ int main( void ){
             #endif
 
                 gDevState = DEV_STATE_JOIN;
+                
+                //Initialise security before coap messages
+                objsec_init();
 
                 //Configure CoAP
                 // Initialize the CoAP protocol handle, pointing to local implementations on malloc/free/tx/rx functions
@@ -323,19 +329,28 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
             /* uint8_t payload[5] = {116,101,115,116,10};
             sendFrame(255, payload, 5); */
 
-            //Sending response
+            //Sending response with encrypted payload
             gDebugSerial.printf("Compiling response...\n");
             // Path to the resource we want to retrieve
             const char* coap_uri_path = "/hello";
-            
+            const char* coapmsg = "Hello world!";
+            uint8_t buffer[128];
+            uint16_t preferred_size = 128;
+            uint16_t length;
+            //Encrypting message
+
+            printf("Encrypting... provided buffer of size: %u\n", preferred_size);
+            length = encrypt(buffer,preferred_size, (const uint8_t *) coapmsg, sizeof(coapmsg));
+
+            //Creating coap header/packet
             // See ns_coap_header.h
             sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
             coap_res_ptr->uri_path_ptr = (uint8_t*)coap_uri_path;       // Path
             coap_res_ptr->uri_path_len = strlen(coap_uri_path);
             coap_res_ptr->msg_code = COAP_MSG_CODE_REQUEST_GET;         // CoAP method
             coap_res_ptr->content_format = COAP_CT_TEXT_PLAIN;          // CoAP content type
-            coap_res_ptr->payload_len = 0;                              // Body length
-            coap_res_ptr->payload_ptr = 0;                              // Body pointer
+            coap_res_ptr->payload_len = length;                              // Body length
+            coap_res_ptr->payload_ptr = buffer;                              // Body pointer
             coap_res_ptr->options_list_ptr = 0;                         // Optional: options list
             // Message ID is used to track request->response patterns, because we're using UDP (so everything is unconfirmed).
             // See the receive code to verify that we get the same message ID back
