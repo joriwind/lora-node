@@ -35,8 +35,8 @@ DEALINGS WITH THE SOFTWARE
 //#include <sys/param.h>
 //#include <sys/systm.h> 
 #include <stdint.h>
-#include "aes.h"
-#include "cmac.h"
+#include "aes-lora.h"
+#include "cmac-lora.h"
 #include "utilities.h"
 
 #define LSHIFT(v, r) do {                                       \
