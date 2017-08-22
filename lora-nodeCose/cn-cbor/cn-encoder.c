@@ -8,7 +8,8 @@ extern "C" {
 } /* Duh. */
 #endif
 
-#include <arpa/inet.h>
+#include "lwip/def.h"
+//#include <arpa/inet.h>
 #include <string.h>
 #include <strings.h>
 #include <stdbool.h>

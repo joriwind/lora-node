@@ -1,6 +1,6 @@
 #include "cn-cbor/cn-cbor.h"
 #include <stdlib.h>
-#include <memory.h>
+//#include <memory.h>
 
 #define INIT_CB(v) \
   if (errp) {errp->err = CN_CBOR_NO_ERROR;} \
@@ -184,8 +184,8 @@ cn_cbor * cn_cbor_null_create(CBOR_CONTEXT_COMMA cn_cbor_errback * errp)
 	return pcn;
 }
 
-
-unsigned char RgbDontUse4[8 * 1024];
+//Buffer too large
+unsigned char RgbDontUse4[20];
 
 size_t cn_cbor_encode_size(cn_cbor * object)
 {

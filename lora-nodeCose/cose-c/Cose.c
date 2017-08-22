@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <memory.h>
+//#include <memory.h>
 
 #include "cose.h"
 #include "cose_int.h"

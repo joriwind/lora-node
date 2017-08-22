@@ -25,7 +25,7 @@ static cn_cbor * algorithm;
 void objsec_init(){
     //memcpy(key, INIT_KEY, OBJ_SEC_KEYSIZE);
     cose_errback err;
-    algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128,&context, &err);
+    algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &err);
     if(algorithm == NULL){
       PRINTF("Could not allocate algorithm object: %u\n", err.err);
     }
@@ -51,7 +51,7 @@ size_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size_
 	COSE_INIT_FLAGS_NO_CBOR_TAG=2,
 	COSE_INIT_FLAGS_ZERO_FORM=4
   */
-  objcose = COSE_Encrypt_Init(COSE_INIT_FLAGS_NONE, &context,&err);
+  objcose = COSE_Encrypt_Init(COSE_INIT_FLAGS_NONE,&err);
 
   if( objcose == NULL ) {
     PRINTF("Error in init cose: %i\n", err.err);
@@ -88,7 +88,6 @@ size_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size_
   size_t size = COSE_Encode((HCOSE) objcose, buffer, 0, bufferSz);
   printf("Buffer filled\n");
   COSE_Encrypt_Free(objcose);
-  clear_memory(&context);
   printf("Objcose released!\n");
   return size;
 
@@ -96,7 +95,6 @@ errorReturn:
   if (objcose != NULL) {
     printf("Releasing objcose\n");
     COSE_Encrypt_Free(objcose);
-    clear_memory(&context);
     printf("Objcose released!\n");
   }
   return -1;

@@ -4,7 +4,7 @@
 #include "crypto.h"
 
 #include <assert.h>
-#include <memory.h>
+//#include <memory.h>
 #include <stdbool.h>
 
 #ifdef USE_OPEN_SSL

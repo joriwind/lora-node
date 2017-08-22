@@ -2,7 +2,7 @@
 #define __OBJ_SEC_H__
 
 #include <stddef.h>
-#include <contiki.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,4 +22,9 @@ void objsec_set_key(uint8_t * k);
  */
 size_t encrypt(uint8_t *buffer, uint16_t prefsz, const uint8_t *message, size_t len);
 
+#endif
+
+
+#ifdef __cplusplus
+}
 #endif

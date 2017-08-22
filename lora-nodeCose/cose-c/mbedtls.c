@@ -4,7 +4,7 @@
 #include "crypto.h"
 
 #include <assert.h>
-#include <memory.h>
+//#include <memory.h>
 
 #ifdef USE_MBED_TLS
 
@@ -1108,7 +1108,7 @@ errorReturn:
 /*
 //#include <stdio.h> //TODO
 void rand_bytes(byte * pb, size_t cb){
-//ctx->aes_ctx->rk e null... i callchainen längst in. prova istället:
+//ctx->aes_ctx->rk e null... i callchainen lï¿½ngst in. prova istï¿½llet:
 //kolla https://tls.mbed.org/kb/how-to/add-a-random-generator
         //init random
        mbedtls_ctr_drbg_context ctr_drbg;
