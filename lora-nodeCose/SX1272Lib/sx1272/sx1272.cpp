@@ -15,8 +15,8 @@ Maintainers: Miguel Luis, Gregory Cristian and Nicolas Huguenin
 #include "sx1272.h"
 
 const FskBandwidth_t SX1272::FskBandwidths[] =
-{       
-    { 2600  , 0x17 },   
+{
+    { 2600  , 0x17 },
     { 3100  , 0x0F },
     { 3900  , 0x07 },
     { 5200  , 0x16 },
@@ -37,7 +37,7 @@ const FskBandwidth_t SX1272::FskBandwidths[] =
     { 166700, 0x11 },
     { 200000, 0x09 },
     { 250000, 0x01 },
-    { 300000, 0x00 }, // Invalid Badwidth
+    { 300000, 0x00 }, // Invalid Bandwidth
 };
 
 
@@ -52,12 +52,10 @@ SX1272::SX1272( RadioEvents_t *events,
                 isRadioActive( false )
 {
     wait_ms( 10 );
-    this->rxTx = 0;
     this->rxtxBuffer = new uint8_t[RX_BUFFER_SIZE];
-    currentOpMode = RF_OPMODE_STANDBY;
-    
+
     this->RadioEvents = events;
-    
+
     this->dioIrq = new DioIrqHandler[6];
 
     this->dioIrq[0] = &SX1272::OnDio0Irq;
@@ -66,7 +64,7 @@ SX1272::SX1272( RadioEvents_t *events,
     this->dioIrq[3] = &SX1272::OnDio3Irq;
     this->dioIrq[4] = &SX1272::OnDio4Irq;
     this->dioIrq[5] = NULL;
-    
+
     this->settings.State = RF_IDLE;
 }
 
@@ -198,6 +196,7 @@ void SX1272::SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
             this->settings.Fsk.IqInverted = iqInverted;
             this->settings.Fsk.RxContinuous = rxContinuous;
             this->settings.Fsk.PreambleLen = preambleLen;
+            this->settings.Fsk.RxSingleTimeout = symbTimeout * ( ( 1.0 / ( double )datarate ) * 8.0 ) * 1e3;
 
             datarate = ( uint16_t )( ( double )XTAL_FREQ / ( double )datarate );
             Write( REG_BITRATEMSB, ( uint8_t )( datarate >> 8 ) );
@@ -224,6 +223,7 @@ void SX1272::SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
                            RF_PACKETCONFIG1_PACKETFORMAT_MASK ) |
                            ( ( fixLen == 1 ) ? RF_PACKETCONFIG1_PACKETFORMAT_FIXED : RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE ) |
                            ( crcOn << 4 ) );
+            Write( REG_PACKETCONFIG2, ( Read( REG_PACKETCONFIG2 ) | RF_PACKETCONFIG2_DATAMODE_PACKET ) );
         }
         break;
     case MODEM_LORA:
@@ -315,32 +315,6 @@ void SX1272::SetRxConfig( RadioModems_t modem, uint32_t bandwidth,
         break;
     }
 }
-#if defined ( TARGET_MOTE_L152RC )
-/*     PD_2=0  PD_2=1
-op PaB  rfo     rfo
-0  4.6  18.5    27.0
-1  5.6  21.1    28.1
-2  6.7  23.3    29.1
-3  7.7  25.3    30.1
-4  8.8  26.2    30.7
-5  9.8  27.3    31.2
-6  10.7 28.1    31.6
-7  11.7 28.6    32.2
-8  12.8 29.2    32.4
-9  13.7 29.9    32.9
-10 14.7 30.5    33.1
-11 15.6 30.8    33.4
-12 16.4 30.9    33.6
-13 17.1 31.0    33.7
-14 17.8 31.1    33.7
-15 18.4 31.1    33.7
-*/
-//                           txpow:   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14  15  16  17  18  19
-static const uint8_t PaBTable[20] = { 0, 0, 0, 0, 0, 1, 2, 3, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15 };
-
-//                           txpow:  20 21 22 23 24 25 26 27 28 29 30
-static const uint8_t RfoTable[11] = { 1, 1, 1, 2, 2, 3, 4, 5, 6, 8, 9 };
-#endif
 
 void SX1272::SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         uint32_t bandwidth, uint32_t datarate,
@@ -348,78 +322,9 @@ void SX1272::SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                         bool fixLen, bool crcOn, bool freqHopOn,
                         uint8_t hopPeriod, bool iqInverted, uint32_t timeout )
 {
-    uint8_t paConfig = 0;
-    uint8_t paDac = 0;
-
     SetModem( modem );
 
-    paConfig = Read( REG_PACONFIG );
-    paDac = Read( REG_PADAC );
-
-#if defined ( TARGET_MOTE_L152RC )
-    if( power > 19 )
-    {
-        paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | RF_PACONFIG_PASELECT_RFO;
-        paConfig = ( paConfig & RFLR_PACONFIG_OUTPUTPOWER_MASK ) | RfoTable[power - 20];
-    }
-    else
-    {
-        paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | RF_PACONFIG_PASELECT_PABOOST;
-        paConfig = ( paConfig & RFLR_PACONFIG_OUTPUTPOWER_MASK ) | PaBTable[power];
-    }
-#else
-    paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | GetPaSelect( this->settings.Channel );
-
-    if( ( paConfig & RF_PACONFIG_PASELECT_PABOOST ) == RF_PACONFIG_PASELECT_PABOOST )
-    {
-        if( power > 17 )
-        {
-            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_ON;
-        }
-        else
-        {
-            paDac = ( paDac & RF_PADAC_20DBM_MASK ) | RF_PADAC_20DBM_OFF;
-        }
-        if( ( paDac & RF_PADAC_20DBM_ON ) == RF_PADAC_20DBM_ON )
-        {
-            if( power < 5 )
-            {
-                power = 5;
-            }
-            if( power > 20 )
-            {
-                power = 20;
-            }
-            paConfig = ( paConfig & RFLR_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 5 ) & 0x0F );
-        }
-        else
-        {
-            if( power < 2 )
-            {
-                power = 2;
-            }
-            if( power > 17 )
-            {
-                power = 17;
-            }
-            paConfig = ( paConfig & RFLR_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power - 2 ) & 0x0F );
-        }
-    }
-    else
-    {
-        if( power < -1 )
-        {
-            power = -1;
-        }
-        if( power > 14 )
-        {
-            power = 14;
-        }
-        paConfig = ( paConfig & RFLR_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power + 1 ) & 0x0F );
-    }
-#endif
-    Write( REG_PACONFIG, paConfig );
-    Write( REG_PADAC, paDac );
+    SetRfTxPower( power );
 
     switch( modem )
     {
@@ -452,7 +357,7 @@ void SX1272::SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                            RF_PACKETCONFIG1_PACKETFORMAT_MASK ) |
                            ( ( fixLen == 1 ) ? RF_PACKETCONFIG1_PACKETFORMAT_FIXED : RF_PACKETCONFIG1_PACKETFORMAT_VARIABLE ) |
                            ( crcOn << 4 ) );
-
+            Write( REG_PACKETCONFIG2, ( Read( REG_PACKETCONFIG2 ) | RF_PACKETCONFIG2_DATAMODE_PACKET ) );
         }
         break;
     case MODEM_LORA:
@@ -536,7 +441,7 @@ void SX1272::SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
     }
 }
 
-double SX1272::TimeOnAir( RadioModems_t modem, uint8_t pktLen )
+uint32_t SX1272::TimeOnAir( RadioModems_t modem, uint8_t pktLen )
 {
     uint32_t airTime = 0;
 
@@ -550,7 +455,7 @@ double SX1272::TimeOnAir( RadioModems_t modem, uint8_t pktLen )
                                      ( ( ( Read( REG_PACKETCONFIG1 ) & ~RF_PACKETCONFIG1_ADDRSFILTERING_MASK ) != 0x00 ) ? 1.0 : 0 ) +
                                      pktLen +
                                      ( ( this->settings.Fsk.CrcOn == 0x01 ) ? 2.0 : 0 ) ) /
-                                     this->settings.Fsk.Datarate ) * 1e6 );
+                                     this->settings.Fsk.Datarate ) * 1e3 );
         }
         break;
     case MODEM_LORA:
@@ -578,15 +483,15 @@ double SX1272::TimeOnAir( RadioModems_t modem, uint8_t pktLen )
             double tmp = ceil( ( 8 * pktLen - 4 * this->settings.LoRa.Datarate +
                                  28 + 16 * this->settings.LoRa.CrcOn -
                                  ( this->settings.LoRa.FixLen ? 20 : 0 ) ) /
-                                 ( double )( 4 * this->settings.LoRa.Datarate -
-                                 ( ( this->settings.LoRa.LowDatarateOptimize > 0 ) ? 2 : 0 ) ) ) *
+                                 ( double )( 4 * ( this->settings.LoRa.Datarate -
+                                 ( ( this->settings.LoRa.LowDatarateOptimize > 0 ) ? 2 : 0 ) ) ) ) *
                                  ( this->settings.LoRa.Coderate + 4 );
             double nPayload = 8 + ( ( tmp > 0 ) ? tmp : 0 );
             double tPayload = nPayload * ts;
             // Time on air
             double tOnAir = tPreamble + tPayload;
-            // return us secs
-            airTime = floor( tOnAir * 1e6 + 0.999 );
+            // return ms secs
+            airTime = floor( tOnAir * 1e3 + 0.999 );
         }
         break;
     }
@@ -669,7 +574,7 @@ void SX1272::Send( uint8_t *buffer, uint8_t size )
 
 void SX1272::Sleep( void )
 {
-    txTimeoutTimer.detach(  );
+    txTimeoutTimer.detach( );
     rxTimeoutTimer.detach( );
 
     SetOpMode( RF_OPMODE_SLEEP );
@@ -678,7 +583,7 @@ void SX1272::Sleep( void )
 
 void SX1272::Standby( void )
 {
-    txTimeoutTimer.detach(  );
+    txTimeoutTimer.detach( );
     rxTimeoutTimer.detach( );
 
     SetOpMode( RF_OPMODE_STANDBY );
@@ -688,7 +593,7 @@ void SX1272::Standby( void )
 void SX1272::Rx( uint32_t timeout )
 {
     bool rxContinuous = false;
-    
+
     switch( this->settings.Modem )
     {
     case MODEM_FSK:
@@ -777,7 +682,7 @@ void SX1272::Rx( uint32_t timeout )
     this->settings.State = RF_RX_RUNNING;
     if( timeout != 0 )
     {
-        rxTimeoutTimer.attach_us( this, &SX1272::OnTimeoutIrq, timeout );
+        rxTimeoutTimer.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ), timeout * 1e3 );
     }
 
     if( this->settings.Modem == MODEM_FSK )
@@ -786,11 +691,8 @@ void SX1272::Rx( uint32_t timeout )
 
         if( rxContinuous == false )
         {
-            rxTimeoutSyncWord.attach_us( this, &SX1272::OnTimeoutIrq, ceil( ( 8.0 * ( this->settings.Fsk.PreambleLen +
-                                                             ( ( Read( REG_SYNCCONFIG ) &
-                                                                ~RF_SYNCCONFIG_SYNCSIZE_MASK ) +
-                                                                1.0 ) + 10.0 ) /
-                                                             ( double )this->settings.Fsk.Datarate ) * 1e6 ) + 4000 );
+            rxTimeoutSyncWord.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ),
+                                         this->settings.Fsk.RxSingleTimeout * 1e3 );
         }
     }
     else
@@ -864,7 +766,7 @@ void SX1272::Tx( uint32_t timeout )
     }
 
     this->settings.State = RF_TX_RUNNING;
-    txTimeoutTimer.attach_us( this, &SX1272::OnTimeoutIrq, timeout );
+    txTimeoutTimer.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ), timeout * 1e3 );
     SetOpMode( RF_OPMODE_TRANSMITTER );
 }
 
@@ -890,7 +792,7 @@ void SX1272::StartCad( void )
                                         );
 
             // DIO3=CADDone
-            Write( REG_DIOMAPPING1, ( Read( REG_DIOMAPPING1 ) & RFLR_DIOMAPPING1_DIO0_MASK ) | RFLR_DIOMAPPING1_DIO0_00 );
+            Write( REG_DIOMAPPING1, ( Read( REG_DIOMAPPING1 ) & RFLR_DIOMAPPING1_DIO3_MASK ) | RFLR_DIOMAPPING1_DIO3_00 );
 
             this->settings.State = RF_CAD;
             SetOpMode( RFLR_OPMODE_CAD );
@@ -899,6 +801,24 @@ void SX1272::StartCad( void )
     default:
         break;
     }
+}
+
+void SX1272::SetTxContinuousWave( uint32_t freq, int8_t power, uint16_t time )
+{
+    uint32_t timeout = ( uint32_t )( time * 1e6 );
+
+    SetChannel( freq );
+
+    SetTxConfig( MODEM_FSK, power, 0, 0, 4800, 0, 5, false, false, 0, 0, 0, timeout );
+
+    Write( REG_PACKETCONFIG2, ( Read( REG_PACKETCONFIG2 ) & RF_PACKETCONFIG2_DATAMODE_MASK ) );
+    // Disable radio interrupts
+    Write( REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_11 | RF_DIOMAPPING1_DIO1_11 );
+    Write( REG_DIOMAPPING2, RF_DIOMAPPING2_DIO4_10 | RF_DIOMAPPING2_DIO5_10 );
+
+    this->settings.State = RF_TX_RUNNING;
+    txTimeoutTimer.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ), timeout );
+    SetOpMode( RF_OPMODE_TRANSMITTER );
 }
 
 int16_t SX1272::GetRssi( RadioModems_t modem )
@@ -922,8 +842,6 @@ int16_t SX1272::GetRssi( RadioModems_t modem )
 
 void SX1272::SetOpMode( uint8_t opMode )
 {
-    currentOpMode = opMode; // Update global variable
-    
     if( opMode == RF_OPMODE_SLEEP )
     {
         SetAntSwLowPower( true );
@@ -931,20 +849,22 @@ void SX1272::SetOpMode( uint8_t opMode )
     else
     {
         SetAntSwLowPower( false );
-        if( opMode == RF_OPMODE_TRANSMITTER )
-        {
-            SetAntSw( 1 );
-        }
-        else
-        {
-            SetAntSw( 0 );
-        }
+        SetAntSw( opMode );
     }
     Write( REG_OPMODE, ( Read( REG_OPMODE ) & RF_OPMODE_MASK ) | opMode );
 }
 
 void SX1272::SetModem( RadioModems_t modem )
 {
+    if( ( Read( REG_OPMODE ) & RFLR_OPMODE_LONGRANGEMODE_ON ) != 0 )
+    {
+        this->settings.Modem = MODEM_LORA;
+    }
+    else
+    {
+        this->settings.Modem = MODEM_FSK;
+    }
+
     if( this->settings.Modem == modem )
     {
         return;
@@ -955,14 +875,14 @@ void SX1272::SetModem( RadioModems_t modem )
     {
     default:
     case MODEM_FSK:
-        SetOpMode( RF_OPMODE_SLEEP );
+        Sleep( );
         Write( REG_OPMODE, ( Read( REG_OPMODE ) & RFLR_OPMODE_LONGRANGEMODE_MASK ) | RFLR_OPMODE_LONGRANGEMODE_OFF );
-    
+
         Write( REG_DIOMAPPING1, 0x00 );
         Write( REG_DIOMAPPING2, 0x30 ); // DIO5=ModeReady
         break;
     case MODEM_LORA:
-        SetOpMode( RF_OPMODE_SLEEP );
+        Sleep( );
         Write( REG_OPMODE, ( Read( REG_OPMODE ) & RFLR_OPMODE_LONGRANGEMODE_MASK ) | RFLR_OPMODE_LONGRANGEMODE_ON );
 
         Write( REG_DIOMAPPING1, 0x00 );
@@ -989,6 +909,22 @@ void SX1272::SetMaxPayloadLength( RadioModems_t modem, uint8_t max )
     }
 }
 
+void SX1272::SetPublicNetwork( bool enable )
+{
+    SetModem( MODEM_LORA );
+    this->settings.LoRa.PublicNetwork = enable;
+    if( enable == true )
+    {
+        // Change LoRa modem SyncWord
+        Write( REG_LR_SYNCWORD, LORA_MAC_PUBLIC_SYNCWORD );
+    }
+    else
+    {
+        // Change LoRa modem SyncWord
+        Write( REG_LR_SYNCWORD, LORA_MAC_PRIVATE_SYNCWORD );
+    }
+}
+
 void SX1272::OnTimeoutIrq( void )
 {
     switch( this->settings.State )
@@ -1011,11 +947,8 @@ void SX1272::OnTimeoutIrq( void )
             {
                 // Continuous mode restart Rx chain
                 Write( REG_RXCONFIG, Read( REG_RXCONFIG ) | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
-                rxTimeoutSyncWord.attach_us( this, &SX1272::OnTimeoutIrq, ceil( ( 8.0 * ( this->settings.Fsk.PreambleLen +
-                                                             ( ( Read( REG_SYNCCONFIG ) &
-                                                                ~RF_SYNCCONFIG_SYNCSIZE_MASK ) +
-                                                             1.0 ) + 10.0 ) /
-                                                            ( double )this->settings.Fsk.Datarate ) * 1e6 ) + 4000 );
+                rxTimeoutSyncWord.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ),
+                                             this->settings.Fsk.RxSingleTimeout * 1e3 );
             }
             else
             {
@@ -1029,6 +962,28 @@ void SX1272::OnTimeoutIrq( void )
         }
         break;
     case RF_TX_RUNNING:
+        // Tx timeout shouldn't happen.
+        // But it has been observed that when it happens it is a result of a corrupted SPI transfer
+        // it depends on the platform design.
+        // 
+        // The workaround is to put the radio in a known state. Thus, we re-initialize it.
+
+        // BEGIN WORKAROUND
+
+        // Reset the radio
+        Reset( );
+
+        // Initialize radio default values
+        SetOpMode( RF_OPMODE_SLEEP );
+
+        RadioRegistersInit( );
+
+        SetModem( MODEM_FSK );
+
+        // Restore previous network type setting.
+        SetPublicNetwork( this->settings.LoRa.PublicNetwork );
+        // END WORKAROUND
+
         this->settings.State = RF_IDLE;
         if( ( this->RadioEvents != NULL ) && ( this->RadioEvents->TxTimeout != NULL ) )
         {
@@ -1074,13 +1029,9 @@ void SX1272::OnDio0Irq( void )
                         {
                             // Continuous mode restart Rx chain
                             Write( REG_RXCONFIG, Read( REG_RXCONFIG ) | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
-                            rxTimeoutSyncWord.attach_us( this, &SX1272::OnTimeoutIrq, ceil( ( 8.0 * ( this->settings.Fsk.PreambleLen +
-                                                                         ( ( Read( REG_SYNCCONFIG ) &
-                                                                            ~RF_SYNCCONFIG_SYNCSIZE_MASK ) +
-                                                                         1.0 ) + 10.0 ) /
-                                                                        ( double )this->settings.Fsk.Datarate ) * 1e6 ) + 4000 );
+                            rxTimeoutSyncWord.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ),
+                                                         this->settings.Fsk.RxSingleTimeout * 1e3 );
                         }
-
 
                         if( ( this->RadioEvents != NULL ) && ( this->RadioEvents->RxError != NULL ) )
                         {
@@ -1125,11 +1076,8 @@ void SX1272::OnDio0Irq( void )
                 {
                     // Continuous mode restart Rx chain
                     Write( REG_RXCONFIG, Read( REG_RXCONFIG ) | RF_RXCONFIG_RESTARTRXWITHOUTPLLLOCK );
-                    rxTimeoutSyncWord.attach_us( this, &SX1272::OnTimeoutIrq, ceil( ( 8.0 * ( this->settings.Fsk.PreambleLen +
-                                                                 ( ( Read( REG_SYNCCONFIG ) &
-                                                                    ~RF_SYNCCONFIG_SYNCSIZE_MASK ) +
-                                                                 1.0 ) + 10.0 ) /
-                                                                ( double )this->settings.Fsk.Datarate ) * 1e6 ) + 4000 );
+                    rxTimeoutSyncWord.attach_us( mbed::callback( this, &SX1272::OnTimeoutIrq ),
+                                                 this->settings.Fsk.RxSingleTimeout * 1e3 );
                 }
 
                 if( ( this->RadioEvents != NULL ) && ( this->RadioEvents->RxDone != NULL ) )
@@ -1270,6 +1218,9 @@ void SX1272::OnDio1Irq( void )
             case MODEM_LORA:
                 // Sync time out
                 rxTimeoutTimer.detach( );
+                // Clear Irq
+                Write( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_RXTIMEOUT );
+
                 this->settings.State = RF_IDLE;
                 if( ( this->RadioEvents != NULL ) && ( this->RadioEvents->RxTimeout != NULL ) )
                 {
@@ -1316,6 +1267,12 @@ void SX1272::OnDio2Irq( void )
             switch( this->settings.Modem )
             {
             case MODEM_FSK:
+                // Checks if DIO4 is connected. If it is not PreambleDtected is set to true.
+                if( this->dioIrq[4] == NULL )
+                {
+                    this->settings.FskPacketHandler.PreambleDetected = true;
+                }
+
                 if( ( this->settings.FskPacketHandler.PreambleDetected == true ) && ( this->settings.FskPacketHandler.SyncWordDetected == false ) )
                 {
                     rxTimeoutSyncWord.detach( );

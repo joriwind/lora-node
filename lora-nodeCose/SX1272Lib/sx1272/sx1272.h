@@ -21,19 +21,19 @@ Maintainers: Miguel Luis, Gregory Cristian and Nicolas Huguenin
 #include "./typedefs/typedefs.h"
 
 /*!
- * Radio wakeup time from SLEEP mode
+ * Radio wake-up time from sleep
  */
-#define RADIO_OSC_STARTUP                           1000 // [us]
+#define RADIO_WAKEUP_TIME                           1 // [ms]
 
 /*!
- * Radio PLL lock and Mode Ready delay which can vary with the temperature
+ * Sync word for Private LoRa networks
  */
-#define RADIO_SLEEP_TO_RX                           2000 // [us]
+#define LORA_MAC_PRIVATE_SYNCWORD                   0x12
 
 /*!
- * Radio complete Wake-up Time with margin for temperature compensation
+ * Sync word for Public LoRa networks
  */
-#define RADIO_WAKEUP_TIME                           ( RADIO_OSC_STARTUP + RADIO_SLEEP_TO_RX )
+#define LORA_MAC_PUBLIC_SYNCWORD                    0x34
 
 
 /*!
@@ -81,8 +81,6 @@ protected:
     uint8_t boardConnected; //1 = SX1272MB1DCS; 0 = SX1272MB1DAS
 
     uint8_t *rxtxBuffer;
-    
-    uint8_t currentOpMode;
 
     /*!
      * Hardware DIO IRQ functions
@@ -96,14 +94,9 @@ protected:
     Timeout rxTimeoutTimer;
     Timeout rxTimeoutSyncWord;
 
-    /*!
-     *  rxTx: [1: Tx, 0: Rx]
-     */
-    uint8_t rxTx;
-
     RadioSettings_t settings;
 
-    static const FskBandwidth_t FskBandwidths[] ;
+    static const FskBandwidth_t FskBandwidths[];
 protected:
 
     /*!
@@ -116,7 +109,7 @@ protected:
 public:
     SX1272( RadioEvents_t *events,
             PinName mosi, PinName miso, PinName sclk, PinName nss, PinName reset,
-            PinName dio0, PinName dio1, PinName dio2, PinName dio3, PinName dio4, PinName dio5 ); 
+            PinName dio0, PinName dio1, PinName dio2, PinName dio3, PinName dio4, PinName dio5 );
     SX1272( RadioEvents_t *events );
     virtual ~SX1272( );
     
@@ -135,21 +128,18 @@ public:
      * @param status Radio status. [RF_IDLE, RX_RUNNING, TX_RUNNING]
      */
     virtual RadioState GetStatus( void ); 
-
     /*!
      * @brief Configures the SX1272 with the given modem
      *
      * @param [IN] modem Modem to be used [0: FSK, 1: LoRa] 
      */
     virtual void SetModem( RadioModems_t modem );
-
     /*!
      * @brief Sets the channel frequency
      *
      * @param [IN] freq         Channel RF frequency
      */
     virtual void SetChannel( uint32_t freq );
-
     /*!
      * @brief Sets the channels configuration
      *
@@ -160,7 +150,6 @@ public:
      * @retval isFree         [true: Channel is free, false: Channel is not free]
      */
     virtual bool IsChannelFree( RadioModems_t modem, uint32_t freq, int16_t rssiThresh );
-
     /*!
      * @brief Generates a 32 bits random value based on the RSSI readings
      *
@@ -172,7 +161,6 @@ public:
      * @retval randomValue    32 bits random value
      */
     virtual uint32_t Random( void );
-
     /*!
      * @brief Sets the reception parameters
      *
@@ -194,8 +182,8 @@ public:
      * @param [IN] preambleLen  Sets the Preamble length ( LoRa only )
      *                          FSK : N/A ( set to 0 )
      *                          LoRa: Length in symbols ( the hardware adds 4 more symbols )
-     * @param [IN] symbTimeout  Sets the RxSingle timeout value ( LoRa only )
-     *                          FSK : N/A ( set to 0 )
+     * @param [IN] symbTimeout  Sets the RxSingle timeout value
+     *                          FSK : timeout number of bytes
      *                          LoRa: timeout in symbols
      * @param [IN] fixLen       Fixed length packets [0: variable, 1: fixed]
      * @param [IN] payloadLen   Sets payload length when fixed lenght is used
@@ -215,7 +203,6 @@ public:
                                uint8_t payloadLen,
                                bool crcOn, bool freqHopOn, uint8_t hopPeriod,
                                bool iqInverted, bool rxContinuous );
-
     /*!
      * @brief Sets the transmission parameters
      *
@@ -243,14 +230,20 @@ public:
      * @param [IN] iqInverted   Inverts IQ signals ( LoRa only )
      *                          FSK : N/A ( set to 0 )
      *                          LoRa: [0: not inverted, 1: inverted]
-     * @param [IN] timeout      Transmission timeout [us]
+     * @param [IN] timeout      Transmission timeout [ms]
      */
     virtual void SetTxConfig( RadioModems_t modem, int8_t power, uint32_t fdev,
                               uint32_t bandwidth, uint32_t datarate,
                               uint8_t coderate, uint16_t preambleLen,
                               bool fixLen, bool crcOn, bool freqHopOn,
                               uint8_t hopPeriod, bool iqInverted, uint32_t timeout );
-
+    /*!
+     * @brief Checks if the given RF frequency is supported by the hardware
+     *
+     * @param [IN] frequency RF frequency to be checked
+     * @retval isSupported [true: supported, false: unsupported]
+     */
+    virtual bool CheckRfFrequency( uint32_t frequency ) = 0;
     /*!
      * @brief Computes the packet time on air for the given payload
      *
@@ -261,8 +254,7 @@ public:
      *
      * @retval airTime        Computed airTime for the given packet payload length
      */
-    virtual double TimeOnAir ( RadioModems_t modem, uint8_t pktLen );
-
+    virtual uint32_t TimeOnAir ( RadioModems_t modem, uint8_t pktLen );
     /*!
      * @brief Sends the buffer of size. Prepares the packet to be sent and sets
      *        the radio in transmission
@@ -271,43 +263,44 @@ public:
      * @param [IN]: size       Buffer size
      */
     virtual void Send( uint8_t *buffer, uint8_t size );
-
     /*!
      * @brief Sets the radio in sleep mode
      */
     virtual void Sleep( void );
-    
     /*!
      * @brief Sets the radio in standby mode
      */
     virtual void Standby( void );
-
+    /*!
+     * @brief Sets the radio in CAD mode
+     */
+    virtual void StartCad( void );
     /*!
      * @brief Sets the radio in reception mode for the given time
-     * @param [IN] timeout Reception timeout [us]
+     * @param [IN] timeout Reception timeout [ms]
      *                     [0: continuous, others timeout]
      */
     virtual void Rx( uint32_t timeout );
-
     /*!
      * @brief Sets the radio in transmission mode for the given time
-     * @param [IN] timeout Transmission timeout [us]
+     * @param [IN] timeout Transmission timeout [ms]
      *                     [0: continuous, others timeout]
      */
     virtual void Tx( uint32_t timeout );
-
     /*!
-     * @brief Start a Channel Activity Detection
+     * @brief Sets the radio in continuous wave transmission mode
+     *
+     * @param [IN]: freq       Channel RF frequency
+     * @param [IN]: power      Sets the output power [dBm]
+     * @param [IN]: time       Transmission mode timeout [s]
      */
-    virtual void StartCad( void );    
-
+    virtual void SetTxContinuousWave( uint32_t freq, int8_t power, uint16_t time );
     /*!
      * @brief Reads the current RSSI value
      *
      * @retval rssiValue Current RSSI value in [dBm]
      */
     virtual int16_t GetRssi ( RadioModems_t modem );
-
     /*!
      * @brief Writes the radio register at the specified address
      *
@@ -315,7 +308,6 @@ public:
      * @param [IN]: data New register value
      */
     virtual void Write ( uint8_t addr, uint8_t data ) = 0;
-
     /*!
      * @brief Reads the radio register at the specified address
      *
@@ -323,7 +315,6 @@ public:
      * @retval data Register value
      */
     virtual uint8_t Read ( uint8_t addr ) = 0;
-
     /*!
      * @brief Writes multiple radio registers starting at address
      *
@@ -332,7 +323,6 @@ public:
      * @param [IN] size   Number of registers to be written
      */
     virtual void Write( uint8_t addr, uint8_t *buffer, uint8_t size ) = 0;
-
     /*!
      * @brief Reads multiple radio registers starting at address
      *
@@ -341,7 +331,6 @@ public:
      * @param [IN] size Number of registers to be read
      */
     virtual void Read ( uint8_t addr, uint8_t *buffer, uint8_t size ) = 0;
-
     /*!
      * @brief Writes the buffer contents to the SX1272 FIFO
      *
@@ -349,7 +338,6 @@ public:
      * @param [IN] size Number of bytes to be written to the FIFO
      */
     virtual void WriteFifo( uint8_t *buffer, uint8_t size ) = 0;
-
     /*!
      * @brief Reads the contents of the SX1272 FIFO
      *
@@ -369,6 +357,15 @@ public:
      * @param [IN] max        Maximum payload length in bytes
      */
     virtual void SetMaxPayloadLength( RadioModems_t modem, uint8_t max );
+
+    /*!
+     * \brief Sets the network to public or private. Updates the sync byte.
+     *
+     * \remark Applies to LoRa modem only
+     *
+     * \param [IN] enable if true, it enables a public network
+     */
+    virtual void SetPublicNetwork( bool enable );
 
     //-------------------------------------------------------------------------
     //                        Board relative functions
@@ -405,6 +402,13 @@ protected:
     virtual void IoDeInit( void ) = 0;
 
     /*!
+     * @brief Sets the radio output power.
+     *
+     * @param [IN] power Sets the RF output power
+     */
+    virtual void SetRfTxPower( int8_t power ) = 0;
+
+    /*!
      * @brief Gets the board PA selection configuration
      *
      * @param [IN] channel Channel frequency in Hz
@@ -432,21 +436,13 @@ protected:
     virtual void AntSwDeInit( void ) = 0;
 
     /*!
-     * @brief Controls the antena switch if necessary.
+     * @brief Controls the antenna switch if necessary.
      *
      * \remark see errata note
      *
-     * @param [IN] rxTx [1: Tx, 0: Rx]
+     * @param [IN] opMode Current radio operating mode
      */
-    virtual void SetAntSw( uint8_t rxTx ) = 0;
-
-    /*!
-     * @brief Checks if the given RF frequency is supported by the hardware
-     *
-     * @param [IN] frequency RF frequency to be checked
-     * @retval isSupported [true: supported, false: unsupported]
-     */
-    virtual bool CheckRfFrequency( uint32_t frequency ) = 0;
+    virtual void SetAntSw( uint8_t opMode ) = 0;
 protected:
 
     /*!
