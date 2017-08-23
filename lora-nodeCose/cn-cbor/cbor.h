@@ -1,6 +1,9 @@
 #ifndef CBOR_PROTOCOL_H__
 #define CBOR_PROTOCOL_H__
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
 /* The 8 major types */
 #define MT_UNSIGNED 0
 #define MT_NEGATIVE 1
@@ -115,4 +118,8 @@
 #define UNUSED_PARAM(p) ((void)&(p))
 #endif
 
+
+#ifdef  __cplusplus
+}
+#endif
 #endif // CBOR_PROTOCOL_H__

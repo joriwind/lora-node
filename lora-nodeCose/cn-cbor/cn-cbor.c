@@ -1,23 +1,14 @@
-#ifndef CN_CBOR_C
-#define CN_CBOR_C
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-#ifdef EMACS_INDENTATION_HELPER
-} /* Duh. */
-#endif
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <assert.h>
-#include <math.h>
-#include "lwip/def.h"
+//#include "lwip/def.h"
 //#include <arpa/inet.h> // needed for ntohl (e.g.) on Linux
 
 #include "cn-cbor/cn-cbor.h"
 #include "cbor.h"
+
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 #define CN_CBOR_FAIL(code) do { pb->err = code;  goto fail; } while(0)
 
@@ -266,8 +257,7 @@ cn_cbor* cn_cbor_decode(const unsigned char* buf, size_t len CBOR_CONTEXT, cn_cb
   return ret;
 }
 
+
 #ifdef  __cplusplus
 }
 #endif
-
-#endif  /* CN_CBOR_C */

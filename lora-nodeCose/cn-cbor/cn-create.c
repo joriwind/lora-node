@@ -1,15 +1,11 @@
-#ifndef CN_CREATE_C
-#define CN_CREATE_C
+#include "cn-cbor/cn-cbor.h"
+#include "cbor.h"
+
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-
-#include "cn-cbor/cn-cbor.h"
-#include "cbor.h"
 
 #define INIT_CB(v) \
   if (errp) {errp->err = CN_CBOR_NO_ERROR;} \
@@ -177,8 +173,7 @@ bool cn_cbor_array_append(cn_cbor* cb_array,
   return true;
 }
 
+
 #ifdef  __cplusplus
 }
 #endif
-
-#endif  /* CN_CBOR_C */

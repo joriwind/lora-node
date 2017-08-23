@@ -7,16 +7,22 @@
 #ifndef CN_CBOR_H
 #define CN_CBOR_H
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-#ifdef EMACS_INDENTATION_HELPER
-} /* Duh. */
-#endif
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <string.h>
+#include <strings.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <math.h>
+
+
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 /**
  * All of the different kinds of CBOR values.

@@ -1,3 +1,11 @@
+#ifndef CONFIGURE_H
+#define CONFIGURE_H
+
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 //
 //  Determine which cryptographic library we are goig to be usig
 //
@@ -46,3 +54,10 @@
 
 
 //#define USE_COUNTER_SIGNATURES
+
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif //CONFIGURE_h

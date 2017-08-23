@@ -1,3 +1,10 @@
+#ifndef CRYPTO_H
+#define CRYPTO_H
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /**
 * Perform an AES-CCM Decryption operation
 *
@@ -73,3 +80,10 @@ bool ECDH_ComputeSecret(COSE * pReciient, cn_cbor ** ppKeyMe, const cn_cbor * pK
 * @return                  none
 */
 void rand_bytes(byte * pb, size_t cb);
+
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif //CRYPTO_H

@@ -1,22 +1,14 @@
-#ifndef CN_ENCODER_C
-#define CN_ENCODER_C
+//#include "lwip/def.h"
+//#include <arpa/inet.h>
+
+
+#include "cn-cbor/cn-cbor.h"
+#include "cbor.h"
+
 
 #ifdef  __cplusplus
 extern "C" {
 #endif
-#ifdef EMACS_INDENTATION_HELPER
-} /* Duh. */
-#endif
-
-#include "lwip/def.h"
-//#include <arpa/inet.h>
-#include <string.h>
-#include <strings.h>
-#include <stdbool.h>
-#include <assert.h>
-
-#include "cn-cbor/cn-cbor.h"
-#include "cbor.h"
 
 #define hton8p(p) (*(uint8_t*)(p))
 #define hton16p(p) (htons(*(uint16_t*)(p)))
@@ -303,8 +295,7 @@ ssize_t cn_cbor_encoder_write(uint8_t *buf,
   return ws.offset - buf_offset;
 }
 
+
 #ifdef  __cplusplus
 }
 #endif
-
-#endif  /* CN_CBOR_C */

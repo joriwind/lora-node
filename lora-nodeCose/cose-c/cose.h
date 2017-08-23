@@ -1,5 +1,14 @@
+#ifndef COSE_H
+#define COSE_H
+
+
 #include <cn-cbor/cn-cbor.h>
 #include "configure.h"
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned char byte;
 
 typedef struct _cose * HCOSE;
@@ -336,3 +345,8 @@ extern cn_cbor * cn_cbor_tag_create(int tag, cn_cbor * child, CBOR_CONTEXT_COMMA
 extern cn_cbor * cn_cbor_bool_create(int boolValue, CBOR_CONTEXT_COMMA cn_cbor_errback * errp);
 extern cn_cbor * cn_cbor_null_create(CBOR_CONTEXT_COMMA cn_cbor_errback * errp);
 
+#ifdef  __cplusplus
+}
+#endif
+
+#endif //COSE_H

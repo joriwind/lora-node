@@ -24,7 +24,7 @@ static cn_cbor * algorithm;
 
 void objsec_init(){
     //memcpy(key, INIT_KEY, OBJ_SEC_KEYSIZE);
-    cose_errback err;
+    cn_cbor_errback err;
     algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &err);
     if(algorithm == NULL){
       PRINTF("Could not allocate algorithm object: %u\n", err.err);

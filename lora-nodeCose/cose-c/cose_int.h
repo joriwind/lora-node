@@ -1,7 +1,15 @@
+#ifndef COSE_INT_H
+#define COSE_INT_H
+
 #include <assert.h>
 
 // These definitions are here because they aren't required for the public
 // interface, and they were quite confusing in cn-cbor.h
+
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 #ifdef USE_COUNTER_SIGNATURES
 struct _COSE_COUNTER_SIGN;
@@ -280,3 +288,11 @@ enum {
 
 
 #define COSE_CounterSign_object 1000
+
+
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif //COSE_INT_H
