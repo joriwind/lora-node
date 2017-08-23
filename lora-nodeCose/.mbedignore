@@ -61,3 +61,9 @@ mbed-os/features/mbedtls/src/ecp_curves.c
 mbed-os/features/mbedtls/src/pkwrite.c              
 mbed-os/features/mbedtls/src/x509write_csr.c          
 mbed-os/features/mbedtls/src/xtea.c
+
+
+#Reduce ram and rom
+mbed-os/features/nanostack/*
+mbed-os/features/netsocket/*
+mbed-os/features/storage/*
