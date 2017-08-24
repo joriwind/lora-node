@@ -5,7 +5,7 @@
 //Only using algorithm implementations like aes, md, ...
 
 /* Save RAM at the expense of ROM */
-#undef MBEDTLS_AES_ROM_TABLES
+#define MBEDTLS_AES_ROM_TABLES
 // Remove RSA, save 20KB at total
 #undef MBEDTLS_RSA_C
 #undef MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
