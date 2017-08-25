@@ -30,10 +30,10 @@ Semtech SX1272 library & examples
 
         Command line mosquitto clien:
         Listen packet (rx):
-            mosquitto_sub -t "application/2/node/+/rx" -v -d
+            mosquitto_sub -t "application/1/node/+/rx" -v -d
             source: https://docs.loraserver.io/loraserver/receiving-data/
         Send packet (tx):
-            mosquitto_pub -t "application/2/node/11223344557788/tx" -m "{ \"reference\" : \"0754bf86\" , \"confirmed\" : true, \"devEUI\" : \"1122334455667788\", \"fPort\" : 15 , \"data\": \"PING\"}" -d
+            mosquitto_pub -t "application/1/node/1122334455667788/tx" -m "{ \"reference\" : \"0754bf86\" , \"confirmed\" : true, \"devEUI\" : \"1122334455667788\", \"fPort\" : 15 , \"data\": \"PING\"}" -d
             source: https://docs.loraserver.io/loraserver/sending-data/
 
             { "reference": "abcd1234", "confirmed": false, "devEUI": "1122334455667788", "fPort": 1}
