@@ -7,23 +7,15 @@
 #ifndef CN_CBOR_H
 #define CN_CBOR_H
 
-
-#include <stdbool.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <string.h>
-#include <strings.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
-#include "inet.h"
-
-
-
 #ifdef  __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+//#include <unistd.h>
+typedef int ssize_t;
 
 /**
  * All of the different kinds of CBOR values.

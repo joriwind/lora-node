@@ -1,10 +1,8 @@
-
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 #include "cn-cbor/cn-cbor.h"
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
 cn_cbor* cn_cbor_mapget_int(const cn_cbor* cb, int key) {
   cn_cbor* cp;
@@ -62,8 +60,3 @@ cn_cbor* cn_cbor_index(const cn_cbor* cb, unsigned int idx) {
   }
   return NULL;
 }
-
-
-#ifdef  __cplusplus
-}
-#endif

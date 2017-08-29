@@ -1,14 +1,16 @@
+#ifndef CN_CBOR_C
+#define CN_CBOR_C
 
-//#include "lwip/def.h"
-//#include <arpa/inet.h> // needed for ntohl (e.g.) on Linux
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <assert.h>
+#include <math.h>
+#include "inet.h" // needed for ntohl (e.g.) on Linux
 
 #include "cn-cbor/cn-cbor.h"
 #include "cbor.h"
-
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
 #define CN_CBOR_FAIL(code) do { pb->err = code;  goto fail; } while(0)
 
@@ -258,6 +260,4 @@ cn_cbor* cn_cbor_decode(const unsigned char* buf, size_t len CBOR_CONTEXT, cn_cb
 }
 
 
-#ifdef  __cplusplus
-}
-#endif
+#endif  /* CN_CBOR_C */

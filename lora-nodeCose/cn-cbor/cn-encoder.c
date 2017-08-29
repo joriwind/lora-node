@@ -1,14 +1,15 @@
-//#include "lwip/def.h"
-//#include <arpa/inet.h>
+#ifndef CN_ENCODER_C
+#define CN_ENCODER_C
 
+
+#include "inet.h"
+#include <string.h>
+#include <strings.h>
+#include <stdbool.h>
+#include <assert.h>
 
 #include "cn-cbor/cn-cbor.h"
 #include "cbor.h"
-
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
 #define hton8p(p) (*(uint8_t*)(p))
 #define hton16p(p) (htons(*(uint16_t*)(p)))
@@ -296,6 +297,4 @@ ssize_t cn_cbor_encoder_write(uint8_t *buf,
 }
 
 
-#ifdef  __cplusplus
-}
-#endif
+#endif  /* CN_CBOR_C */

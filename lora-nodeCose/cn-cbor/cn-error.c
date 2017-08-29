@@ -1,8 +1,3 @@
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 const char *cn_cbor_error_str[] = {
  "CN_CBOR_NO_ERROR",
  "CN_CBOR_ERR_OUT_OF_DATA",
@@ -16,8 +11,3 @@ const char *cn_cbor_error_str[] = {
  "CN_CBOR_ERR_OUT_OF_MEMORY",
  "CN_CBOR_ERR_FLOAT_NOT_SUPPORTED"
 };
-
-
-#ifdef  __cplusplus
-}
-#endif
