@@ -5,6 +5,7 @@
 #include "cose_int.h"
 #include "configure.h"
 #include "crypto.h"
+#include <string.h>
 
 extern bool BuildContextBytes(COSE * pcose, int algID, size_t cbitKey, byte ** ppbContext, size_t * pcbContext, CBOR_CONTEXT_COMMA cose_errback * perr);
 

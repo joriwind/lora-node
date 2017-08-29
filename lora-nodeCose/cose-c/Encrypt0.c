@@ -6,6 +6,7 @@
 //#include <memory.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "cose.h"
 #include "cose_int.h"
