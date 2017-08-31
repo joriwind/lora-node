@@ -39,8 +39,10 @@
 #include "mbed-coap/sn_coap_protocol.h"
 #include "sn_coap_header_internal.h"
 #include "sn_coap_protocol_internal.h"
-#include "randLIB.h"
-#include "mbed-trace/mbed_trace.h"
+//#include "randLIB.h"
+//#include "mbed-trace/mbed_trace.h"
+#include "randLIB_map.h"
+#include "mbed_trace.h"
 
 #define TRACE_GROUP "coap"
 /* * * * * * * * * * * * * * * * * * * * */
