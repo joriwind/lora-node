@@ -12,3 +12,7 @@ lora-nodeOTP/mbed/*
 #Exclude library files
 lora-nodeCose/SX1272Lib/.hg/*
 lora-nodeCose/LoRaWAN-lib/.hg/*
+
+node_cose_mbed2/SX1272Lib/.hg/*
+node_cose_mbed2/LoRaWAN-lib/.hg/*
+node_cose_mbed2/mbed/*

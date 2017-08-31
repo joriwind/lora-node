@@ -1,0 +1,69 @@
+#ifndef MBEDTLS_CUSTOM_CONFIG_H
+#define MBEDTLS_CUSTOM_CONFIG_H
+
+//Cleared entire config, no need for tls or dtls or ...
+//Only using algorithm implementations like aes, md, ...
+
+/* Save RAM at the expense of ROM */
+#define MBEDTLS_AES_ROM_TABLES
+// Remove RSA, save 20KB at total
+#undef MBEDTLS_RSA_C
+#undef MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
+
+// Remove error messages, save 10KB of ROM
+#undef MBEDTLS_ERROR_C
+
+// Remove selftesting and save 11KB of ROM
+#undef MBEDTLS_SELF_TEST
+
+// Reduces ROM size by 30 kB
+#undef MBEDTLS_ERROR_STRERROR_DUMMY
+#undef MBEDTLS_VERSION_FEATURES
+#undef MBEDTLS_DEBUG_C
+
+#undef MBEDTLS_GCM_C
+#undef MBEDTLS_CERTS_C
+#undef MBEDTLS_ECDH_C
+#undef MBEDTLS_ECDSA_C
+#undef MBEDTLS_ECP_C
+#undef MBEDTLS_HMAC_DRBG_C
+#undef MBEDTLS_OID_C
+#undef MBEDTLS_PEM_PARSE_C
+#undef MBEDTLS_PK_C
+#undef MBEDTLS_PK_PARSE_C
+#undef MBEDTLS_PK_WRITE_C
+#undef MBEDTLS_RSA_C
+#undef MBEDTLS_SHA512_C
+#undef MBEDTLS_SSL_CACHE_C
+#undef MBEDTLS_SSL_COOKIE_C
+#undef MBEDTLS_SSL_TICKET_C
+#undef MBEDTLS_SSL_CLI_C
+#undef MBEDTLS_SSL_SRV_C
+#undef MBEDTLS_SSL_TLS_C
+#undef MBEDTLS_VERSION_C
+#undef MBEDTLS_X509_USE_C
+#undef MBEDTLS_ECDSA_DETERMINISTIC
+#undef MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED
+#undef MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#undef MBEDTLS_SSL_DTLS_ANTI_REPLAY
+#undef MBEDTLS_SSL_DTLS_BADMAC_LIMIT
+#undef MBEDTLS_X509_CRT_PARSE_C
+#undef MBEDTLS_X509_CRL_PARSE_C
+#undef MBEDTLS_SSL_SERVER_NAME_INDICATION
+
+
+#define MBEDTLS_SHA256_C
+#define MBEDTLS_CCM_C
+#define MBEDTLS_MD_C
+#define MBEDTLS_CTR_DRBG_C
+
+#define MBEDTLS_AES_C
+
+#define MBEDTLS_CIPHER_C
+
+#define MBEDTLS_PLATFORM_C
+
+
+#include "mbedtls/check_config.h"
+
+#endif /* MBEDTLS_CUSTOM_CONFIG_H */
