@@ -1,6 +1,7 @@
 #include "mbed.h"
 #include "board.h"
 #include "radio.h"
+#include "rtos.h"
 
 #include "LoRaMac.h"
 #include "LoRaMacTest.h"
@@ -12,7 +13,13 @@
 #include "mbed-os/features/FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_header.h"
 
 //Object security
+#include "cn-cbor/cn-cbor.h"
 #include "obj-sec.h"
+
+
+//DEBUGGING
+//#include "mbed_mem_trace.h"
+//#include "mbed_stats.h"
 
 /* Function declarations */
 //Callback functions for LoRaWAN-lib 
@@ -22,6 +29,9 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm );
 //Helper functions
 static int isNetworkJoined( void );
 bool sendFrame( uint8_t port, uint8_t* payload, int size );
+
+extern "C" void * calloc_fn(size_t count, size_t size, void *context);
+extern "C" void free_fn(void *ptr, void *context);
 
 /*
  * Configuration variables for LoRaWAN-lib
@@ -70,12 +80,60 @@ int8_t coap_rx_cb(sn_coap_hdr_s *a, sn_nsdl_addr_s *b, void *c) {
     return 0;
 }
 
+int heapSize()
+{
+   char   stackVariable;
+   void   *heap;
+   int result;
+   heap  = malloc(4);
+   if(heap == 0){
+       return 0;
+   }
+   result  = &stackVariable - (char *)heap;
+   free(heap);
+   return result;
+}
+
+
 //Control function of program
 int main( void ){
+    //Debugging
+    //mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
+    /*printf("Heap size: %lu\n", heapSize());
+    printf("Available memory: %i", AvailableMemory(256, 0x8000, 1)); */
+
+    /* mbed_stats_heap_t heap_stats;
+    
+    mbed_stats_heap_get(&heap_stats);
+    printf("Current heap: %lu\r\n", heap_stats.current_size);
+    printf("Max heap size: %lu\r\n", heap_stats.max_size); */
+
+    /* mbed_stats_heap_t heap_stats;
+    
+    printf("Starting heap stats example\r\n");
+
+    void *allocation = malloc(1000);
+    printf("Freeing 1000 bytes\r\n");
+
+    mbed_stats_heap_get(&heap_stats);
+    printf("Current heap: %lu\r\n", heap_stats.current_size);
+    printf("Max heap size: %lu\r\n", heap_stats.max_size);
+
+    if(!allocation){
+        printf("Was no allocation... \r\n");
+    }else{
+        free(allocation);
+    }
+
+    mbed_stats_heap_get(&heap_stats);
+    printf("Current heap after: %lu\r\n", heap_stats.current_size);
+    printf("Max heap size after: %lu\r\n", heap_stats.max_size); */
+    printf("Sizeof cn_cbor %u\r\n", sizeof(cn_cbor));
     while(1){
         switch(gDevState){
             case DEV_STATE_INIT:
-            {
+            {  
+
                 MibRequestConfirm_t mibReq;
                 LoRaMacStatus_t status;
 
@@ -138,7 +196,9 @@ int main( void ){
                 gDevState = DEV_STATE_JOIN;
                 
                 //Initialise security before coap messages
-                objsec_init();
+                cn_cbor_context context = {.calloc_func = &calloc_fn, .free_func = &free_fn, .context = NULL};
+                objsec_init(context);
+                printf("Objsec sucessfully inited\n");
 
                 //Configure CoAP
                 // Initialize the CoAP protocol handle, pointing to local implementations on malloc/free/tx/rx functions
@@ -171,7 +231,8 @@ int main( void ){
                     gDevState = DEV_STATE_JOIN;
                     break;
                 }
-                gDevState = DEV_STATE_WAIT;
+                //gDevState = DEV_STATE_WAIT;
+                gDevState = DEV_STATE_SEND;
                 break;
             }
             case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
@@ -188,6 +249,57 @@ int main( void ){
                     gDebugSerial.printf("MAIN: retry sending\n");
                     wait(2);
                 }*/
+
+                gDebugSerial.printf("Compiling response...\n");
+                // Path to the resource we want to retrieve
+                const char* coap_uri_path = "/hello";
+                const char* coapmsg = "Hello world!";
+                uint8_t buffer[128];
+                uint16_t preferred_size = 128;
+                uint16_t length;
+                //Encrypting message
+                int h = heapSize();
+                printf("Heap size: %i\n", h);
+                void *ptr;
+                ptr = malloc(8);
+                if (0 == ptr) {
+                    printf("Did not work!: \n");
+                    h = heapSize();
+                    printf("Heap size: %i\n", h);
+                    gDevState = DEV_STATE_WAIT;
+                    break;
+                }
+                free(ptr);
+                
+                printf("Encrypting... provided buffer of size: %u\n", preferred_size);
+                length = encrypt(buffer,preferred_size, (const uint8_t *) coapmsg, sizeof(coapmsg));
+    
+                //Creating coap header/packet
+                // See ns_coap_header.h
+                sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
+                coap_res_ptr->uri_path_ptr = (uint8_t*)coap_uri_path;       // Path
+                coap_res_ptr->uri_path_len = strlen(coap_uri_path);
+                coap_res_ptr->msg_code = COAP_MSG_CODE_REQUEST_GET;         // CoAP method
+                coap_res_ptr->content_format = COAP_CT_TEXT_PLAIN;          // CoAP content type
+                coap_res_ptr->payload_len = length;                              // Body length
+                coap_res_ptr->payload_ptr = buffer;                              // Body pointer
+                coap_res_ptr->options_list_ptr = 0;                         // Optional: options list
+                // Message ID is used to track request->response patterns, because we're using UDP (so everything is unconfirmed).
+                // See the receive code to verify that we get the same message ID back
+                coap_res_ptr->msg_id = 7;
+                
+                // Calculate the CoAP message size, allocate the memory and build the message
+                uint16_t message_len = sn_coap_builder_calc_needed_packet_data_size(coap_res_ptr);
+                printf("Calculated message length: %d bytes\n", message_len);
+                
+                uint8_t* message_ptr = (uint8_t*)malloc(message_len);
+                sn_coap_builder(message_ptr, coap_res_ptr);
+                sendFrame(255, message_ptr, message_len);
+    
+                free(coap_res_ptr);
+                free(message_ptr);
+
+
                 gDevState = DEV_STATE_WAIT;
                 break;
             }
@@ -195,6 +307,7 @@ int main( void ){
     }
     
 }
+
 
 /*!
  * \brief Function executed on TxNextPacket Timeout event
@@ -312,7 +425,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         {
 
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
-            gDebugSerial.printf("Parsing CoAP...\n");
+            /* gDebugSerial.printf("Parsing CoAP...\n");
             //Expect coap packet
             sn_coap_hdr_s* parsed = sn_coap_parser(coapHandle, mcpsIndication->BufferSize, mcpsIndication->Buffer, &coapVersion);
             
@@ -324,48 +437,13 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
             printf("\tcontent_format:   %d\n", parsed->content_format);
             printf("\tpayload_len:      %d\n", parsed->payload_len);
             printf("\tpayload:          %s\n", payload.c_str());
-            printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr);
+            printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); */
             
             /* uint8_t payload[5] = {116,101,115,116,10};
             sendFrame(255, payload, 5); */
 
             //Sending response with encrypted payload
-            gDebugSerial.printf("Compiling response...\n");
-            // Path to the resource we want to retrieve
-            const char* coap_uri_path = "/hello";
-            const char* coapmsg = "Hello world!";
-            uint8_t buffer[128];
-            uint16_t preferred_size = 128;
-            uint16_t length;
-            //Encrypting message
-
-            printf("Encrypting... provided buffer of size: %u\n", preferred_size);
-            length = encrypt(buffer,preferred_size, (const uint8_t *) coapmsg, sizeof(coapmsg));
-
-            //Creating coap header/packet
-            // See ns_coap_header.h
-            sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
-            coap_res_ptr->uri_path_ptr = (uint8_t*)coap_uri_path;       // Path
-            coap_res_ptr->uri_path_len = strlen(coap_uri_path);
-            coap_res_ptr->msg_code = COAP_MSG_CODE_REQUEST_GET;         // CoAP method
-            coap_res_ptr->content_format = COAP_CT_TEXT_PLAIN;          // CoAP content type
-            coap_res_ptr->payload_len = length;                              // Body length
-            coap_res_ptr->payload_ptr = buffer;                              // Body pointer
-            coap_res_ptr->options_list_ptr = 0;                         // Optional: options list
-            // Message ID is used to track request->response patterns, because we're using UDP (so everything is unconfirmed).
-            // See the receive code to verify that we get the same message ID back
-            coap_res_ptr->msg_id = 7;
-            
-            // Calculate the CoAP message size, allocate the memory and build the message
-            uint16_t message_len = sn_coap_builder_calc_needed_packet_data_size(coap_res_ptr);
-            printf("Calculated message length: %d bytes\n", message_len);
-            
-            uint8_t* message_ptr = (uint8_t*)malloc(message_len);
-            sn_coap_builder(message_ptr, coap_res_ptr);
-            sendFrame(255, message_ptr, message_len);
-
-            free(coap_res_ptr);
-            free(message_ptr);
+            gDevState = DEV_STATE_SEND;
             break;
         }
     default:
@@ -431,4 +509,17 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
         gDebugSerial.printf("sendFrame: DID NOT SEND!\n");
     }
     return true;
+}
+
+//typedef void* (*cn_calloc_func)(size_t count, size_t size, void *context);
+void * calloc_fn(size_t count, size_t size, void *context){
+    //return mbed_ualloc(size * count, [UALLOC_TRAITS_NEVER_FREE, UALLOC_TRAITS_ZERO_FILL]);
+    printf("fn calloc: s: %u, c: %u\r\n", size, count);
+    return calloc(count, size);
+}
+
+//typedef void (*cn_free_func)(void *ptr, void *context);
+void free_fn(void *ptr, void *context){
+    //mbed_ufree(ptr);
+    free(ptr);
 }

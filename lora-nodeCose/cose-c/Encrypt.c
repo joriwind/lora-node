@@ -563,7 +563,7 @@ bool _COSE_Enveloped_encrypt(COSE_Enveloped * pcose, const byte * pbKeyIn, size_
 #endif
 
 	//  Build authenticated data
-
+	printf("Building AAD...\n");
 	size_t cbAuthData = 0;
 	if (!_COSE_Encrypt_Build_AAD(&pcose->m_message, &pbAuthData, &cbAuthData, szContext, perr)) goto errorReturn;
 
@@ -828,7 +828,11 @@ bool _COSE_Encrypt_Build_AAD(COSE * pMessage, byte ** ppbAAD, size_t * pcbAAD, c
 	cbAuthData = cn_cbor_encode_size(pAuthData);
 	pbAuthData = (byte *)COSE_CALLOC(cbAuthData, 1, context);
 	CHECK_CONDITION(pbAuthData != NULL, COSE_ERR_OUT_OF_MEMORY);
-	CHECK_CONDITION((size_t)cn_cbor_encoder_write(pbAuthData, 0, cbAuthData, pAuthData) == cbAuthData, COSE_ERR_CBOR);
+	printf("Error?...\n");
+	size_t sz = cn_cbor_encoder_write(pbAuthData, 0, cbAuthData, pAuthData);
+	printf("Size: %u, expected %u\n", sz, cbAuthData);
+	CHECK_CONDITION(sz == cbAuthData, COSE_ERR_CBOR);
+	//CHECK_CONDITION((size_t)cn_cbor_encoder_write(pbAuthData, 0, cbAuthData, pAuthData) == cbAuthData, COSE_ERR_CBOR);
 
 	*ppbAAD = pbAuthData;
 	*pcbAAD = cbAuthData;

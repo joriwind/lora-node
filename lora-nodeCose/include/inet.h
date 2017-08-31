@@ -1,17 +1,19 @@
-#ifndef INET_H
-#define INET_H
+#ifndef __INET_H
+#define __INET_H
 
-#include "stdint.h"
+#include <stdint.h>
+
+
+/* #ifdef  __cplusplus
+extern "C" {
+#endif */
+
 
 /* definition to expand macro then apply to pragma message */
 #define VALUE_TO_STRING(x) #x
 #define VALUE(x) VALUE_TO_STRING(x)
 #define VAR_NAME_VALUE(var) #var "= "  VALUE(var)
 #pragma message(VAR_NAME_VALUE(BYTE_ORDER))
-
-#ifdef  __cplusplus
-extern "C" {
-#endif
 
 /* #if BYTE_ORDER == BIG_ENDIAN
 #define lwip_htons(x) (x)
@@ -54,8 +56,8 @@ uint32_t lwip_htonl(uint32_t x);
 
 //#endif /* BYTE_ORDER == BIG_ENDIAN */
 
-#ifdef  __cplusplus
+/* #ifdef  __cplusplus
 }
-#endif
+#endif */
 
 #endif //INET_H

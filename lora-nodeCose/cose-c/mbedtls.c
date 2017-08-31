@@ -4,6 +4,8 @@
 #include "crypto.h"
 
 #include <assert.h>
+#include <string.h>
+#include <stdio.h>
 //#include <memory.h>
 
 #ifdef USE_MBED_TLS
@@ -48,15 +50,17 @@ bool AES_CCM_Decrypt(COSE_Enveloped * pcose, int TSize, int LSize, const byte * 
 
 	//  Setup and run the mbedTLS code
 	cipher = MBEDTLS_CIPHER_ID_AES;
-	
-        CHECK_CONDITION(!mbedtls_ccm_setkey(&ctx, cipher, pbKey, cbKey*8), COSE_ERR_CRYPTO_FAIL);
+	printf("DECRYPT: setting key...\n");
+	int8_t condition = mbedtls_ccm_setkey(&ctx, cipher, pbKey, cbKey*8);
+	printf("Returned: %i", condition);
+        CHECK_CONDITION(!condition, COSE_ERR_CRYPTO_FAIL);
 	TSize /= 8; // Comes in in bits not bytes.
 
 	cbOut = (int)  cbCrypto - TSize;
 	rgbOut = (byte *)COSE_CALLOC(cbOut, 1, context);
 	CHECK_CONDITION(rgbOut != NULL, COSE_ERR_OUT_OF_MEMORY);
         
-		
+	printf("Decrypting...\n");
 	CHECK_CONDITION(!mbedtls_ccm_auth_decrypt(&ctx, cbOut, rgbIV, NSize, pbAuthData, cbAuthData, pbCrypto, rgbOut, &pbCrypto[cbOut], TSize), COSE_ERR_CRYPTO_FAIL);
         
 	mbedtls_ccm_free(&ctx);
@@ -112,7 +116,10 @@ bool AES_CCM_Encrypt(COSE_Enveloped * pcose, int TSize, int LSize, const byte * 
 	//  Setup and run the mbedTLS code
 	
 	//cbKey comes in bytes not bits
- 	CHECK_CONDITION(!mbedtls_ccm_setkey(&ctx, cipher, pbKey, cbKey*8), COSE_ERR_CRYPTO_FAIL);
+	printf("Setting key...\n");
+	int condition = mbedtls_ccm_setkey(&ctx, cipher, pbKey, cbKey*8);
+	printf("Returned: %x\n", condition);
+ 	CHECK_CONDITION(!condition, COSE_ERR_CRYPTO_FAIL);
 	
 	TSize /= 8; // Comes in in bits not bytes.
 
@@ -120,6 +127,7 @@ bool AES_CCM_Encrypt(COSE_Enveloped * pcose, int TSize, int LSize, const byte * 
 	rgbOut = (byte *)COSE_CALLOC(cbOut+TSize, 1, context);
 	CHECK_CONDITION(rgbOut != NULL, COSE_ERR_OUT_OF_MEMORY);
 
+	printf("Encrypting and tagging...\n");
 	CHECK_CONDITION(!mbedtls_ccm_encrypt_and_tag(&ctx, pcose->cbContent, rgbIV, NSize, pbAuthData, cbAuthData, pcose->pbContent, rgbOut, &rgbOut[pcose->cbContent], TSize), COSE_ERR_CRYPTO_FAIL);	
 
 	cnTmp = cn_cbor_data_create(rgbOut, (int)pcose->cbContent + TSize, CBOR_CONTEXT_PARAM_COMMA NULL);
@@ -701,6 +709,7 @@ bool HMAC_Create(COSE_MacMessage * pcose, int HSize, int TSize, const byte * pbK
 	rgbOut = COSE_CALLOC(mbedtls_md_get_size(info), 1, context);
 	CHECK_CONDITION(rgbOut != NULL, COSE_ERR_OUT_OF_MEMORY);
 
+	printf("HMAC something...\n");
 	CHECK_CONDITION(!(mbedtls_md_hmac_starts (&contx, pbKey, cbKey)), COSE_ERR_CRYPTO_FAIL);
 	CHECK_CONDITION(!(mbedtls_md_hmac_update (&contx, pbAuthData, cbAuthData)), COSE_ERR_CRYPTO_FAIL);
 	CHECK_CONDITION(!(mbedtls_md_hmac_finish (&contx, rgbOut)), COSE_ERR_CRYPTO_FAIL);
@@ -739,7 +748,7 @@ bool HMAC_Validate(COSE_MacMessage * pcose, int HSize, int TSize, const byte * p
 	cbOut = mbedtls_md_get_size(info);
 	rgbOut = COSE_CALLOC(cbOut, 1, context);
 	CHECK_CONDITION(rgbOut != NULL, COSE_ERR_OUT_OF_MEMORY);
-
+	printf("HMAC validate...\n");
 	CHECK_CONDITION(!(mbedtls_md_hmac_starts (&contx, pbKey, cbKey)), COSE_ERR_CRYPTO_FAIL);
 	CHECK_CONDITION(!(mbedtls_md_hmac_update (&contx, pbAuthData, cbAuthData)), COSE_ERR_CRYPTO_FAIL);
 	CHECK_CONDITION(!(mbedtls_md_hmac_finish (&contx, rgbOut)), COSE_ERR_CRYPTO_FAIL);

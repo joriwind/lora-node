@@ -1,9 +1,5 @@
 #include "inet.h"
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 //#if BYTE_ORDER == LITTLE_ENDIAN
 
 #if !defined(lwip_htons)
@@ -34,7 +30,3 @@ uint32_t lwip_htonl(uint32_t n)
 
 //#endif /* BYTE_ORDER == LITTLE_ENDIAN */
 
-
-#ifdef  __cplusplus
-}
-#endif

@@ -1,6 +1,6 @@
 #include "obj-sec.h"
 #include "cose.h"
-#include "cn-cbor.h"
+#include "string.h"
 
 #define DEBUG 1
 #if DEBUG
@@ -12,6 +12,7 @@
 
 #define OBJ_SEC_KEYSIZE 16
 
+/* unsigned long  heapSize(); */
 
 
 #define INIT_KEY {0x1, 0x1, 0x1, 0x1, \
@@ -22,10 +23,13 @@
 static byte key[OBJ_SEC_KEYSIZE] = INIT_KEY;
 static cn_cbor * algorithm;
 
-void objsec_init(){
+cn_cbor_context ctx;
+
+void objsec_init(cn_cbor_context context){
     //memcpy(key, INIT_KEY, OBJ_SEC_KEYSIZE);
+    ctx = context;
     cn_cbor_errback err;
-    algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &err);
+    algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &ctx, &err);
     if(algorithm == NULL){
       PRINTF("Could not allocate algorithm object: %u\n", err.err);
     }
@@ -43,7 +47,14 @@ size_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size_
   HCOSE_ENCRYPT objcose;
   uint8_t temp[1] = {""};
   size_t temp_len = 0;
-  
+  /* 
+  //Check heap size
+  unsigned long h = heapSize();
+  printf("Size of heap: %lu\n", h);
+  if(h <= 730){
+    printf("Heap not large enough: %lu \n", h);
+    return 0;
+  } */
 
   /* INIT FLAGS
   COSE_INIT_FLAGS_NONE=0,
@@ -51,8 +62,8 @@ size_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size_
 	COSE_INIT_FLAGS_NO_CBOR_TAG=2,
 	COSE_INIT_FLAGS_ZERO_FORM=4
   */
-  objcose = COSE_Encrypt_Init(COSE_INIT_FLAGS_NONE,&err);
-
+  objcose = COSE_Encrypt_Init(COSE_INIT_FLAGS_NONE, &ctx, &err);
+  
   if( objcose == NULL ) {
     PRINTF("Error in init cose: %i\n", err.err);
     return -1;
@@ -98,5 +109,16 @@ errorReturn:
     printf("Objcose released!\n");
   }
   return -1;
-  
+
 }
+
+/* unsigned long  heapSize()
+{
+   char   stackVariable;
+   void   *heap;
+   unsigned long result;
+   heap  = malloc(4);
+   result  = &stackVariable - (char *)heap;
+   free(heap);
+   return result;
+} */

@@ -67,3 +67,8 @@ mbed-os/features/mbedtls/src/xtea.c
 mbed-os/features/nanostack/*
 mbed-os/features/netsocket/*
 mbed-os/features/storage/*
+mbed-os/features/FEATURE_CLIENT/*
+mbed-os/features/FEATURE_UVISOR/*
+mbed-os/features/frameworks/*
+mbed-os/features/net/*
+mbed-os/events/*

@@ -25,10 +25,10 @@ from os.path import join, abspath, dirname
 #BUILD_DIR = abspath(join(ROOT, "build"))
 
 # ARM
-#ARM_PATH = "C:/Program Files/ARM"
+#ARM_PATH = "/opt/gcc-arm-none-eabi-6-2017-q2-update/"
 
 # GCC ARM
-#GCC_ARM_PATH = ""
+#GCC_ARM_PATH = "/opt/gcc-arm-none-eabi-6-2017-q2-update/bin/"
 
 # GCC CodeRed
 #GCC_CR_PATH = "C:/code_red/RedSuite_4.2.0_349/redsuite/Tools/bin"

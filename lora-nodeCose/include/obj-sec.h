@@ -1,14 +1,16 @@
 #ifndef __OBJ_SEC_H__
 #define __OBJ_SEC_H__
 
-#include <stddef.h>
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void objsec_init();
+#include <stddef.h>
+#include <stdint.h>
+#include "cn-cbor.h"
+
+
+void objsec_init(cn_cbor_context context);
 void objsec_set_key(uint8_t * k);
 
 /**

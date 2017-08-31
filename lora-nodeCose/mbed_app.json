@@ -1,5 +1,5 @@
 {
-    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\""],
+    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"", "USE_CBOR_CONTEXT=1", "MBED_CONF_APP_MAIN_STACK_SIZE=4096"], 
     "target_overrides": {
         "*": {
             "target.features_add": ["COMMON_PAL"]
