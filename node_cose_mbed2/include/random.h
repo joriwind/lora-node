@@ -11,6 +11,8 @@ void seed_random();
 
 uint16_t get_16bit();
 
+uint16_t get_random_in_range(uint16_t min, uint16_t max);
+
 #ifdef __cplusplus
 }
 #endif

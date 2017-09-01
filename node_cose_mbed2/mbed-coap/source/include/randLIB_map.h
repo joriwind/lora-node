@@ -8,6 +8,6 @@
 
 #define randLIB_get_16bit get_16bit
 
-#define randLIB_get_random_in_range
+#define randLIB_get_random_in_range get_random_in_range
 
 #endif //__RANDLIB_MAP_H
