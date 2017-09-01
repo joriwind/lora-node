@@ -19,10 +19,6 @@
 #include "obj-sec.h"
 
 
-//DEBUGGING
-//#include "mbed_mem_trace.h"
-//#include "mbed_stats.h"
-
 /* Function declarations */
 //Callback functions for LoRaWAN-lib 
 static void McpsConfirm( McpsConfirm_t *McpsConfirm );
@@ -99,38 +95,7 @@ int heapSize()
 
 //Control function of program
 int main( void ){
-    //Debugging
-    //mbed_mem_trace_set_callback(mbed_mem_trace_default_callback);
-    /*printf("Heap size: %lu\n", heapSize());
-    printf("Available memory: %i", AvailableMemory(256, 0x8000, 1)); */
-
-    /* mbed_stats_heap_t heap_stats;
     
-    mbed_stats_heap_get(&heap_stats);
-    printf("Current heap: %lu\r\n", heap_stats.current_size);
-    printf("Max heap size: %lu\r\n", heap_stats.max_size); */
-
-    /* mbed_stats_heap_t heap_stats;
-    
-    printf("Starting heap stats example\r\n");
-
-    void *allocation = malloc(1000);
-    printf("Freeing 1000 bytes\r\n");
-
-    mbed_stats_heap_get(&heap_stats);
-    printf("Current heap: %lu\r\n", heap_stats.current_size);
-    printf("Max heap size: %lu\r\n", heap_stats.max_size);
-
-    if(!allocation){
-        printf("Was no allocation... \r\n");
-    }else{
-        free(allocation);
-    }
-
-    mbed_stats_heap_get(&heap_stats);
-    printf("Current heap after: %lu\r\n", heap_stats.current_size);
-    printf("Max heap size after: %lu\r\n", heap_stats.max_size); */
-    printf("Sizeof cn_cbor %u\r\n", sizeof(cn_cbor));
     while(1){
         switch(gDevState){
             case DEV_STATE_INIT:
@@ -233,8 +198,8 @@ int main( void ){
                     gDevState = DEV_STATE_JOIN;
                     break;
                 }
-                //gDevState = DEV_STATE_WAIT;
-                gDevState = DEV_STATE_SEND;
+                gDevState = DEV_STATE_WAIT;
+                //gDevState = DEV_STATE_SEND;
                 break;
             }
             case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
@@ -245,13 +210,7 @@ int main( void ){
             }
             case DEV_STATE_SEND:
             {
-                /*gDebugSerial.printf("MAIN: sending frame\n");
-                uint8_t payload[2] = {0,5};
-                while(!sendFrame(2, payload, 2)){
-                    gDebugSerial.printf("MAIN: retry sending\n");
-                    wait(2);
-                }*/
-
+                
                 gDebugSerial.printf("Compiling response...\n");
                 // Path to the resource we want to retrieve
                 const char* coap_uri_path = "/hello";
@@ -418,6 +377,10 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                 if(mcpsIndication->BufferSize == 128){
                     gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
                     //heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
+                    if(mcpsIndication->BufferSize != 16){
+                        printf("Key lenght does not match!: %u\r\n", mcpsIndication->BufferSize);
+                    }
+                    objsec_set_key(mcpsIndication->Buffer);
                 }
             }
             break;
@@ -427,24 +390,26 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         {
 
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
-            /* gDebugSerial.printf("Parsing CoAP...\n");
+            gDebugSerial.printf("Parsing CoAP...\n");
             //Expect coap packet
             sn_coap_hdr_s* parsed = sn_coap_parser(coapHandle, mcpsIndication->BufferSize, mcpsIndication->Buffer, &coapVersion);
             
-            // We know the payload is going to be a string
-            std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
-    
-            printf("\tmsg_id:           %d\n", parsed->msg_id);
-            printf("\tmsg_code:         %d\n", parsed->msg_code);
-            printf("\tcontent_format:   %d\n", parsed->content_format);
-            printf("\tpayload_len:      %d\n", parsed->payload_len);
-            printf("\tpayload:          %s\n", payload.c_str());
-            printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); */
-            
-            /* uint8_t payload[5] = {116,101,115,116,10};
-            sendFrame(255, payload, 5); */
-
-            //Sending response with encrypted payload
+            if(parsed != NULL){
+                //We expect the payload to be a string
+                std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
+        
+                printf("\tmsg_id:           %d\n", parsed->msg_id);
+                printf("\tmsg_code:         %d\n", parsed->msg_code);
+                printf("\tcontent_format:   %d\n", parsed->content_format);
+                printf("\tpayload_len:      %d\n", parsed->payload_len);
+                printf("\tpayload:          %s\n", payload.c_str());
+                printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); 
+                
+            }else{
+                printf("Did not receive a correct coap packet!\r\n");
+            }
+            //TODO: check if request contains the right resource, for now always send the resource
+            //Let the main thread send the response...
             gDevState = DEV_STATE_SEND;
             break;
         }
