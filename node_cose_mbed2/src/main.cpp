@@ -59,10 +59,12 @@ coap_version_e coapVersion = COAP_VERSION_1;
  
 // CoAP HAL
 void* coap_malloc(uint16_t size) {
+    printf("Coap: malloc size: %u\r\n", size);
     return malloc(size);
 }
  
 void coap_free(void* addr) {
+    printf("Coap: free %p\r\n", addr);
     free(addr);
 }
 
@@ -404,7 +406,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                 printf("\tpayload_len:      %d\n", parsed->payload_len);
                 printf("\tpayload:          %s\n", payload.c_str());
                 printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); 
-                
+                sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
             }else{
                 printf("Did not receive a correct coap packet!\r\n");
             }
@@ -488,5 +490,6 @@ void * calloc_fn(size_t count, size_t size, void *context){
 //typedef void (*cn_free_func)(void *ptr, void *context);
 void free_fn(void *ptr, void *context){
     //mbed_ufree(ptr);
+    printf("fn free: p: %p\r\n", ptr);
     free(ptr);
 }
