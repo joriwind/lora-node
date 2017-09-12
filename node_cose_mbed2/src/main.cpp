@@ -31,6 +31,8 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size );
 extern "C" void * calloc_fn(size_t count, size_t size, void *context);
 extern "C" void free_fn(void *ptr, void *context);
 
+int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_t rxBufferSize);
+
 /*
  * Configuration variables for LoRaWAN-lib
  */
@@ -213,54 +215,7 @@ int main( void ){
             case DEV_STATE_SEND:
             {
                 
-                gDebugSerial.printf("Compiling response...\n");
-                // Path to the resource we want to retrieve
-                const char* coap_uri_path = "/hello";
-                const char* coapmsg = "Hello world!";
-                uint8_t buffer[128];
-                uint16_t preferred_size = 128;
-                uint16_t length;
-                //Encrypting message
-                int h = heapSize();
-                printf("Heap size: %i\n", h);
-                void *ptr;
-                ptr = malloc(8);
-                if (0 == ptr) {
-                    printf("Did not work!: \n");
-                    h = heapSize();
-                    printf("Heap size: %i\n", h);
-                    gDevState = DEV_STATE_WAIT;
-                    break;
-                }
-                free(ptr);
                 
-                printf("Encrypting... provided buffer of size: %u\n", preferred_size);
-                length = encrypt(buffer,preferred_size, (const uint8_t *) coapmsg, sizeof(coapmsg));
-    
-                //Creating coap header/packet
-                // See ns_coap_header.h
-                sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
-                coap_res_ptr->uri_path_ptr = (uint8_t*)coap_uri_path;       // Path
-                coap_res_ptr->uri_path_len = strlen(coap_uri_path);
-                coap_res_ptr->msg_code = COAP_MSG_CODE_REQUEST_GET;         // CoAP method
-                coap_res_ptr->content_format = COAP_CT_TEXT_PLAIN;          // CoAP content type
-                coap_res_ptr->payload_len = length;                              // Body length
-                coap_res_ptr->payload_ptr = buffer;                              // Body pointer
-                coap_res_ptr->options_list_ptr = 0;                         // Optional: options list
-                // Message ID is used to track request->response patterns, because we're using UDP (so everything is unconfirmed).
-                // See the receive code to verify that we get the same message ID back
-                coap_res_ptr->msg_id = 7;
-                
-                // Calculate the CoAP message size, allocate the memory and build the message
-                uint16_t message_len = sn_coap_builder_calc_needed_packet_data_size(coap_res_ptr);
-                printf("Calculated message length: %d bytes\n", message_len);
-                
-                uint8_t* message_ptr = (uint8_t*)malloc(message_len);
-                sn_coap_builder(message_ptr, coap_res_ptr);
-                sendFrame(255, message_ptr, message_len);
-    
-                free(coap_res_ptr);
-                free(message_ptr);
 
 
                 gDevState = DEV_STATE_WAIT;
@@ -390,28 +345,19 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         }
     case 255:   //HeComm communication
         {
-
+            uint8_t buffer[128];
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
-            gDebugSerial.printf("Parsing CoAP...\n");
-            //Expect coap packet
-            sn_coap_hdr_s* parsed = sn_coap_parser(coapHandle, mcpsIndication->BufferSize, mcpsIndication->Buffer, &coapVersion);
             
-            if(parsed != NULL){
-                //We expect the payload to be a string
-                std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
-        
-                printf("\tmsg_id:           %d\n", parsed->msg_id);
-                printf("\tmsg_code:         %d\n", parsed->msg_code);
-                printf("\tcontent_format:   %d\n", parsed->content_format);
-                printf("\tpayload_len:      %d\n", parsed->payload_len);
-                printf("\tpayload:          %s\n", payload.c_str());
-                printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); 
-                sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
-            }else{
-                printf("Did not receive a correct coap packet!\r\n");
+            int16_t length = compileResponse(buffer, 128, mcpsIndication->Buffer, mcpsIndication->BufferSize);
+            if(length < 0){
+                printf("Unable to compile response\r\n");
+                break;
             }
-            //TODO: check if request contains the right resource, for now always send the resource
-            //Let the main thread send the response...
+            if(!sendFrame(255, buffer, length)){
+                printf("Did not send reply!\r\n");
+            }else{
+                printf("Successfully send reply\r\n");
+            }
             gDevState = DEV_STATE_SEND;
             break;
         }
@@ -438,6 +384,94 @@ static void MlmeConfirm( MlmeConfirm_t *MlmeConfirm )
         }
     }else{ 
     }
+}
+
+int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_t rxBufferSize){
+    const char* payload = "Hello world!";
+    uint8_t buffer[128];
+    size_t bufferSize = 128;
+    size_t payloadLength = 12;
+    int16_t encryptedLength = 0;
+    uint16_t messageLength = 0;
+    sn_coap_hdr_s *coap_res_ptr = NULL;
+
+    //Expect coap packet
+    printf("Parsing CoAP...\n");
+    sn_coap_hdr_s* parsed = sn_coap_parser(coapHandle, rxBufferSize, rxBuffer, &coapVersion);
+    
+    if(parsed != NULL){
+        //We expect the payload to be a string
+        std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
+
+        printf("\tmsg_id:           %d\n", parsed->msg_id);
+        printf("\tmsg_code:         %d\n", parsed->msg_code);
+        printf("\tcontent_format:   %d\n", parsed->content_format);
+        printf("\tpayload_len:      %d\n", parsed->payload_len);
+        printf("\tpayload:          %s\n", payload.c_str());
+        printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); 
+    }else{
+        printf("Did not receive a correct coap packet!\r\n");
+        return -1;
+    }
+    //TODO: check if request contains the right resource, for now always send the resource
+
+    gDebugSerial.printf("Compiling response...\n");
+    // Path to the resource we want to retrieve
+
+    //Encrypting message
+    
+    printf("Encrypting... provided buffer of size: %u\r\n", bufferSize);
+    encryptedLength = encrypt(buffer,bufferSize, (const uint8_t *) payload,payloadLength);
+    if(0 > encryptedLength){
+        printf("Did not encrypt correctly\r\n");
+        goto errorReturn;
+    }else{
+        printf("Encrypted message of size: %u\r\n", encryptedLength);
+    }
+    //Creating coap header/packet
+    // See ns_coap_header.h
+    //sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
+    //sn_coap_hdr_s *coap_res_ptr = sn_coap_parser_alloc_message(coapHandle);
+    coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_VALID );
+    if(NULL == coap_res_ptr){
+        printf("Unable to allocate COAP message\r\n");
+        goto errorReturn;
+    }
+    /* coap_res_ptr->uri_path_ptr = (uint8_t*)coap_uri_path;       // Path
+    coap_res_ptr->uri_path_len = strlen(coap_uri_path);
+    coap_res_ptr->msg_code = COAP_MSG_CODE_REQUEST_GET;         // CoAP method */
+    coap_res_ptr->content_format = COAP_CT_TEXT_PLAIN;          // CoAP content type
+    coap_res_ptr->payload_len = encryptedLength;                              // Body length
+    coap_res_ptr->payload_ptr = buffer;                              // Body pointer
+    //coap_res_ptr->options_list_ptr = 0;                         // Optional: options list
+    // Message ID is used to track request->response patterns, because we're using UDP (so everything is unconfirmed).
+    // See the receive code to verify that we get the same message ID back
+    //coap_res_ptr->msg_id = 7;
+    
+    // Calculate the CoAP message size, allocate the memory and build the message
+    messageLength = sn_coap_builder_calc_needed_packet_data_size(coap_res_ptr);
+
+    if(!messageLength){
+        printf("Unable to calculate coap packet size\n");
+        goto errorReturn;
+    }
+    if(messageLength > respSize){
+        printf("Response buffer too small\r\n");
+        goto errorReturn;
+    }
+    printf("Calculated message length: %d bytes\n", messageLength);
+    
+    messageLength = sn_coap_builder(resp, coap_res_ptr);    
+
+    sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
+    sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
+    return 0;
+    
+
+errorReturn:
+    sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
+    sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
+    return -1;
 }
 
 
