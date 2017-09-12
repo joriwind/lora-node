@@ -465,13 +465,33 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
 
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
-    return 0;
+    return messageLength;
     
 
 errorReturn:
+    //Compile negative response
+    coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_INTERNAL_SERVER_ERROR);
+    if(NULL == coap_res_ptr){
+        printf("Unable to allocate bad response COAP message\r\n");
+        return -1;
+    }
+    messageLength = sn_coap_builder_calc_needed_packet_data_size(coap_res_ptr);
+    
+    if(!messageLength){
+        printf("Unable to calculate coap packet size\n");
+    }else{
+        if(messageLength > respSize){
+            printf("Response buffer too small\r\n");
+            messageLength = -1;
+        }else{
+            printf("Calculated message length: %d bytes\n", messageLength);
+            
+            messageLength = sn_coap_builder(resp, coap_res_ptr);    
+        }
+    }
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
-    return -1;
+    return messageLength;
 }
 
 
