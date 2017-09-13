@@ -46,6 +46,12 @@ static uint8_t gAppKey[] = LORAWAN_APPLICATION_KEY;
 //Serial state indication
 Serial gDebugSerial(USBTX, USBRX);
 
+#define BUTTON_ENABLE 1
+#ifdef BUTTON_ENABLE
+//Add button to send messages to fog
+InterruptIn button(USER_BUTTON);
+#endif
+
 //Device state
 enum DevState
 {
@@ -95,6 +101,19 @@ int heapSize()
    free(heap);
    return result;
 }
+
+#ifdef BUTTON_ENABLE
+void sendDebugMessage() {
+    printf("USER BUTTON interrupt, sending message... \r\n");
+    uint8_t payload[5] = {116,101,115,116,10};
+
+    if(!sendFrame(255, payload, sizeof(payload))){
+        printf("Did not send!\r\n");
+    }else{
+        printf("Successfully send message\r\n");
+    }
+}
+#endif
 
 
 //Control function of program
@@ -174,6 +193,11 @@ int main( void ){
                 //Configure CoAP
                 // Initialize the CoAP protocol handle, pointing to local implementations on malloc/free/tx/rx functions
                 coapHandle = sn_coap_protocol_init(&coap_malloc, &coap_free, &coap_tx_cb, &coap_rx_cb);
+
+            #ifdef BUTTON_ENABLE
+                button.rise(&sendDebugMessage);  // call toggle function on the rising edge
+            #endif
+
                 break;
             }
             case DEV_STATE_JOIN:
@@ -208,7 +232,7 @@ int main( void ){
             }
             case DEV_STATE_WAIT:    //Wait for requests or actions --> indication callback
             {
-                wait(1);
+                
                 //gDebugSerial.printf("MAIN: waiting\n");
                 break;
             }
