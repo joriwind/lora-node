@@ -1245,6 +1245,24 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
                                 skipIndication = true;
                             }
                         }
+                        else if( port == 255)   //E2E hecomm communication
+                        {
+                            if( fCtrl.Bits.FOptsLen > 0 )
+                            {
+                                // Decode Options field MAC commands. Omit the fPort.
+                                ProcessMacCommands( payload, 8, appPayloadStartIndex - 1, snr );
+                            }
+
+                            //No decryption
+                            memcpy(LoRaMacRxPayload, payload + appPayloadStartIndex, frameLen);
+                            
+                            if( skipIndication == false )
+                            {
+                                McpsIndication.Buffer = LoRaMacRxPayload;
+                                McpsIndication.BufferSize = frameLen;
+                                McpsIndication.RxData = true;
+                            }
+                        }
                         else
                         {
                             if( fCtrl.Bits.FOptsLen > 0 )
@@ -2990,6 +3008,11 @@ LoRaMacStatus_t PrepareFrame( LoRaMacHeader_t *macHdr, LoRaMacFrameCtrl_t *fCtrl
                 if( framePort == 0 )
                 {
                     LoRaMacPayloadEncrypt( (uint8_t* ) payload, payloadSize, LoRaMacNwkSKey, LoRaMacDevAddr, UP_LINK, UpLinkCounter, LoRaMacPayload );
+                }
+                else if( framePort == 255) //E2E hecomm fog communication
+                {
+                    //heCommEncrypt((uint8_t* ) payload, payloadSize, LoRaMacPayload, payloadSize);
+                    memcpy(LoRaMacPayload, payload, payloadSize);
                 }
                 else
                 {
