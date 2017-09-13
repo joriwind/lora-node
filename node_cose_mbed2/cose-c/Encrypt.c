@@ -806,7 +806,6 @@ bool _COSE_Encrypt_Build_AAD(COSE * pMessage, byte ** ppbAAD, size_t * pcbAAD, c
 	ptmp = cn_cbor_string_create(szContext, CBOR_CONTEXT_PARAM_COMMA &cbor_error);
 	CHECK_CONDITION_CBOR(ptmp != NULL, cbor_error);
 	CHECK_CONDITION_CBOR(cn_cbor_array_append(pAuthData, ptmp, &cbor_error), cbor_error);
-	CN_CBOR_FREE(ptmp, context);
 	ptmp = NULL;
 
 	pItem = _COSE_arrayget_int(pMessage, INDEX_PROTECTED);
@@ -819,13 +818,11 @@ bool _COSE_Encrypt_Build_AAD(COSE * pMessage, byte ** ppbAAD, size_t * pcbAAD, c
 	}
 	CHECK_CONDITION_CBOR(ptmp != NULL, cbor_error);
 	CHECK_CONDITION_CBOR(cn_cbor_array_append(pAuthData, ptmp, &cbor_error), cbor_error);
-	CN_CBOR_FREE(ptmp, context);
 	ptmp = NULL;
 
 	ptmp = cn_cbor_data_create(pMessage->m_pbExternal, (int) pMessage->m_cbExternal, CBOR_CONTEXT_PARAM_COMMA &cbor_error);
 	CHECK_CONDITION_CBOR(ptmp != NULL, cbor_error);
 	CHECK_CONDITION_CBOR(cn_cbor_array_append(pAuthData, ptmp, &cbor_error), cbor_error);
-	CN_CBOR_FREE(ptmp, context);
 	ptmp = NULL;
 
 	cbAuthData = cn_cbor_encode_size(pAuthData);

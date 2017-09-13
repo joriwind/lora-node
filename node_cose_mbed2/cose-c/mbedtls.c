@@ -102,7 +102,6 @@ bool AES_CCM_Encrypt(COSE_Enveloped * pcose, int TSize, int LSize, const byte * 
 		memcpy(rgbIV, pbIV, NSize);
 		cbor_iv_t = cn_cbor_data_create(pbIV, NSize, CBOR_CONTEXT_PARAM_COMMA &cbor_error);
 		CHECK_CONDITION_CBOR(cbor_iv_t != NULL, cbor_error);
-		COSE_FREE(pbIV, context);
 		pbIV = NULL;
 
 		if (!_COSE_map_put(&pcose->m_message, COSE_Header_IV, cbor_iv_t, COSE_UNPROTECT_ONLY, perr)) goto errorReturn;
@@ -133,11 +132,9 @@ bool AES_CCM_Encrypt(COSE_Enveloped * pcose, int TSize, int LSize, const byte * 
 
 	cnTmp = cn_cbor_data_create(rgbOut, (int)pcose->cbContent + TSize, CBOR_CONTEXT_PARAM_COMMA NULL);
 	CHECK_CONDITION(cnTmp != NULL, COSE_ERR_CBOR);
-	COSE_FREE(rgbOut, context);
 	rgbOut = NULL;
 
 	CHECK_CONDITION(_COSE_array_replace(&pcose->m_message, cnTmp, INDEX_BODY, CBOR_CONTEXT_PARAM_COMMA NULL), COSE_ERR_CBOR);
-	
 	cnTmp = NULL;
 
 	mbedtls_ccm_free(&ctx);
