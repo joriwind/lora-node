@@ -18,6 +18,12 @@
 #include "cn-cbor/cn-cbor.h"
 #include "obj-sec.h"
 
+int i;
+#define PRINTBUF(buffer, begin, end)  printf("Buffer:{"); for (i = begin; i < end; i++){ \
+    printf(" %x", buffer[i]);  \
+  } \
+  printf("}\n");
+
 
 /* Function declarations */
 //Callback functions for LoRaWAN-lib 
@@ -67,8 +73,10 @@ coap_version_e coapVersion = COAP_VERSION_1;
  
 // CoAP HAL
 void* coap_malloc(uint16_t size) {
-    printf("Coap: malloc size: %u\r\n", size);
-    return malloc(size);
+    void *ptr;
+    ptr = malloc(size);
+    printf("Coap: malloc size: %u, p:%p\r\n", size, ptr);
+    return ptr;
 }
  
 void coap_free(void* addr) {
@@ -371,7 +379,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         {
             uint8_t buffer[128];
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
-            
+            PRINTBUF(mcpsIndication->Buffer, 0, mcpsIndication->BufferSize);
             int16_t length = compileResponse(buffer, 128, mcpsIndication->Buffer, mcpsIndication->BufferSize);
             if(length < 0){
                 printf("Unable to compile response\r\n");
@@ -425,14 +433,23 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
     
     if(parsed != NULL){
         //We expect the payload to be a string
-        std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
+        printf("\tmsg_id:           %d\r\n", parsed->msg_id);
+        printf("\tmsg_code:         %d\r\n", parsed->msg_code);
 
-        printf("\tmsg_id:           %d\n", parsed->msg_id);
-        printf("\tmsg_code:         %d\n", parsed->msg_code);
-        printf("\tcontent_format:   %d\n", parsed->content_format);
-        printf("\tpayload_len:      %d\n", parsed->payload_len);
-        printf("\tpayload:          %s\n", payload.c_str());
-        printf("\toptions_list_ptr: %p\n", parsed->options_list_ptr); 
+        std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
+        printf("\tpayload_len:      %d\r\n", parsed->payload_len);
+        printf("\tpayload:          %s\r\n", payload.c_str());
+
+        std::string uri((const char*)parsed->uri_path_ptr, parsed->uri_path_len);
+        printf("\tmsg_uri_path:     %s\r\n", uri.c_str());
+        printf("\tmsg_uri_path_len:      %d\r\n", parsed->uri_path_len);
+
+        std::string token((const char*)parsed->token_ptr, parsed->token_len);
+        printf("\tmsg_token:        %s\r\n", token.c_str());
+        printf("\tmsg_token_len:      %d\r\n", parsed->token_len);
+
+        printf("\tcontent_format:   %d\r\n", parsed->content_format);
+        printf("\toptions_list_ptr: %p\r\n", parsed->options_list_ptr); 
     }else{
         printf("Did not receive a correct coap packet!\r\n");
         return -1;
@@ -562,8 +579,10 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
 //typedef void* (*cn_calloc_func)(size_t count, size_t size, void *context);
 void * calloc_fn(size_t count, size_t size, void *context){
     //return mbed_ualloc(size * count, [UALLOC_TRAITS_NEVER_FREE, UALLOC_TRAITS_ZERO_FILL]);
-    printf("fn calloc: s: %u, c: %u\r\n", size, count);
-    return calloc(count, size);
+    void *ptr;
+    ptr = calloc(count, size);
+    printf("fn calloc: s: %u, c: %u, p: %p\r\n", size, count, ptr);
+    return ptr;
 }
 
 //typedef void (*cn_free_func)(void *ptr, void *context);
