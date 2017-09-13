@@ -550,12 +550,13 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
     if( LoRaMacMcpsRequest( &mcpsReq ) == LORAMAC_STATUS_OK )
     {
         if(mcpsReq.Type == MCPS_UNCONFIRMED){
-            return false;
+            return true;
         }
+        return true;
     }else{
         gDebugSerial.printf("sendFrame: DID NOT SEND!\n");
     }
-    return true;
+    return false;
 }
 
 //typedef void* (*cn_calloc_func)(size_t count, size_t size, void *context);
