@@ -563,14 +563,16 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
     }
 
     //gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
-    if( LoRaMacMcpsRequest( &mcpsReq ) == LORAMAC_STATUS_OK )
+    LoRaMacStatus_t err;
+    err = LoRaMacMcpsRequest( &mcpsReq );
+    if( err == LORAMAC_STATUS_OK )
     {
         if(mcpsReq.Type == MCPS_UNCONFIRMED){
             return true;
         }
         return true;
     }else{
-        gDebugSerial.printf("sendFrame: DID NOT SEND!\n");
+        gDebugSerial.printf("sendFrame: DID NOT SEND: %i!\n", err);
     }
     return false;
 }
