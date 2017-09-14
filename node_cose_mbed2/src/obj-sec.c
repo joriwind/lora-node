@@ -21,22 +21,17 @@
                   0x1, 0x1, 0x1, 0x1};
 
 static byte key[OBJ_SEC_KEYSIZE] = INIT_KEY;
-static cn_cbor * algorithm;
 
 cn_cbor_context ctx;
 
 void objsec_init(cn_cbor_context context){
     //memcpy(key, INIT_KEY, OBJ_SEC_KEYSIZE);
     ctx = context;
-    cn_cbor_errback err;
-    algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &ctx, &err);
-    if(algorithm == NULL){
-      PRINTF("Could not allocate algorithm object: %u\n", err.err);
-    }
 }
 
 void objsec_set_key(uint8_t *k){
     memcpy(key, k, OBJ_SEC_KEYSIZE);
+    printf("Objsec: key set\r\n");
 }
 
 int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size_t len) {
@@ -47,6 +42,9 @@ int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size
   HCOSE_ENCRYPT objcose;
   uint8_t temp[1] = {""};
   size_t temp_len = 0;
+
+  cn_cbor_errback cnerr;
+  cn_cbor * algorithm;
   /* 
   //Check heap size
   unsigned long h = heapSize();
@@ -75,6 +73,12 @@ int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size
     goto errorReturn;
   }
   printf("Setcontent done!\n");
+
+
+  algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &ctx, &cnerr);
+  if(algorithm == NULL){
+    PRINTF("Could not allocate algorithm object: %u\n", cnerr.err);
+  }
 
   if(!COSE_Encrypt_map_put_int(objcose, COSE_Header_Algorithm, algorithm, COSE_DONT_SEND, &err)){
     PRINTF("Error in setting algorithm %i\n", err.err);
