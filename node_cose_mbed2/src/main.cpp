@@ -363,14 +363,13 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
         {
             gDebugSerial.printf("McpsIndication: command on HeCOMM; Rx:%i, BufSize: %i\n", mcpsIndication->RxData, mcpsIndication->BufferSize);
             if(mcpsIndication->RxData == true){
-                if(mcpsIndication->BufferSize == 128){
-                    gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
-                    //heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
-                    if(mcpsIndication->BufferSize != 16){
-                        printf("Key lenght does not match!: %u\r\n", mcpsIndication->BufferSize);
-                    }
-                    objsec_set_key(mcpsIndication->Buffer);
+                //heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
+                if(mcpsIndication->BufferSize != 16){
+                    printf("Key lenght does not match!: %u\r\n", mcpsIndication->BufferSize);
+                    break;
                 }
+                objsec_set_key(mcpsIndication->Buffer);
+                gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
             }
             break;
             
