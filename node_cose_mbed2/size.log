@@ -1,0 +1,64 @@
+New measurement: node-lorawan
+wo sep 20 14:32:21 CEST 2017
+Building project node_cose_mbed2 (NUCLEO_L073RZ, GCC_ARM)
+Scan: .
+Scan: env
+Scan: mbed
+Elf2Bin: node_cose_mbed2
++-----------+-------+-------+------+
+| Module    | .text | .data | .bss |
++-----------+-------+-------+------+
+| Fill      |    83 |     5 |   51 |
+| Misc      | 56414 |   819 | 4293 |
+| Subtotals | 56497 |   824 | 4344 |
++-----------+-------+-------+------+
+Allocated Heap: unknown
+Allocated Stack: unknown
+Total Static RAM memory (data + bss): 5168 bytes
+Total RAM memory (data + bss + heap + stack): 5168 bytes
+Total Flash memory (text + data + misc): 57321 bytes
+
+Image: ./BUILD/NUCLEO_L073RZ/GCC_ARM/node_cose_mbed2.bin
+
+New measurement: node-hecomm
+wo sep 20 14:33:31 CEST 2017
+Building project node_cose_mbed2 (NUCLEO_L073RZ, GCC_ARM)
+Scan: .
+Scan: env
+Scan: mbed
++-----------+-------+-------+------+
+| Module    | .text | .data | .bss |
++-----------+-------+-------+------+
+| Fill      |    99 |     8 |   53 |
+| Misc      | 63426 |   836 | 4475 |
+| Subtotals | 63525 |   844 | 4528 |
++-----------+-------+-------+------+
+Allocated Heap: unknown
+Allocated Stack: unknown
+Total Static RAM memory (data + bss): 5372 bytes
+Total RAM memory (data + bss + heap + stack): 5372 bytes
+Total Flash memory (text + data + misc): 64369 bytes
+
+Image: ./BUILD/NUCLEO_L073RZ/GCC_ARM/node_cose_mbed2.bin
+
+New measurement: node-cose
+wo sep 20 14:34:29 CEST 2017
+Building project node_cose_mbed2 (NUCLEO_L073RZ, GCC_ARM)
+Scan: .
+Scan: env
+Scan: mbed
++-----------+-------+-------+------+
+| Module    | .text | .data | .bss |
++-----------+-------+-------+------+
+| Fill      |   106 |     8 |   53 |
+| Misc      | 86239 |   852 | 4515 |
+| Subtotals | 86345 |   860 | 4568 |
++-----------+-------+-------+------+
+Allocated Heap: unknown
+Allocated Stack: unknown
+Total Static RAM memory (data + bss): 5428 bytes
+Total RAM memory (data + bss + heap + stack): 5428 bytes
+Total Flash memory (text + data + misc): 87205 bytes
+
+Image: ./BUILD/NUCLEO_L073RZ/GCC_ARM/node_cose_mbed2.bin
+

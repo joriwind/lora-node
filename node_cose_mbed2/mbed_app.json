@@ -1,5 +1,5 @@
 {
-    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"", "USE_CBOR_CONTEXT=1"], 
+    "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_mbed_client_config.h\"", "USE_CBOR_CONTEXT=1", "COAP_ENABLED=1", "HECOMM_ENABLED=1", "COSE_ENABLED=1"], 
     "target_overrides": {
         "*": {
             "target.features_add": ["COMMON_PAL"]

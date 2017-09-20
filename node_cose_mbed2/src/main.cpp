@@ -11,12 +11,16 @@
 //#include "FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_protocol.h"
 //#include "FEATURE_COMMON_PAL/mbed-coap/mbed-coap/sn_coap_header.h"
 
-#include "mbed-coap/sn_coap_protocol.h"
-#include "mbed-coap/sn_coap_header.h"
+#if COAP_ENABLED
+    #include "mbed-coap/sn_coap_protocol.h"
+    #include "mbed-coap/sn_coap_header.h"
+#endif
 
 //Object security
-#include "cn-cbor/cn-cbor.h"
-#include "obj-sec.h"
+#if COSE_ENABLED
+    #include "cn-cbor/cn-cbor.h"
+    #include "obj-sec.h"
+#endif
 
 int i;
 #define PRINTBUF(buffer, begin, end)  printf("Buffer:{"); for (i = begin; i < end; i++){ \
@@ -53,7 +57,7 @@ static uint8_t gAppKey[] = LORAWAN_APPLICATION_KEY;
 Serial gDebugSerial(USBTX, USBRX);
 
 #define BUTTON_ENABLE 1
-#ifdef BUTTON_ENABLE
+#if BUTTON_ENABLE
 //Add button to send messages to fog
 InterruptIn button(USER_BUTTON);
 #endif
@@ -68,9 +72,11 @@ enum DevState
 };
 static DevState gDevState = DEV_STATE_INIT;
 
+#if COAP_ENABLED
 struct coap_s* coapHandle;
 coap_version_e coapVersion = COAP_VERSION_1;
- 
+#endif 
+
 // CoAP HAL
 void* coap_malloc(uint16_t size) {
     void *ptr;
@@ -84,7 +90,7 @@ void coap_free(void* addr) {
     free(addr);
 }
 
-
+#if COAP_ENABLED
 // tx_cb and rx_cb are not used in this program
 uint8_t coap_tx_cb(uint8_t *a, uint16_t b, sn_nsdl_addr_s *c, void *d) {
     printf("coap tx cb\n");
@@ -95,6 +101,7 @@ int8_t coap_rx_cb(sn_coap_hdr_s *a, sn_nsdl_addr_s *b, void *c) {
     printf("coap rx cb\n");
     return 0;
 }
+#endif
 
 int heapSize()
 {
@@ -110,7 +117,7 @@ int heapSize()
    return result;
 }
 
-#ifdef BUTTON_ENABLE
+#if BUTTON_ENABLE
 void sendDebugMessage() {
     printf("USER BUTTON interrupt, sending message... \r\n");
     uint8_t payload[5] = {116,101,115,116,10};
@@ -192,17 +199,20 @@ int main( void ){
             #endif
 
                 gDevState = DEV_STATE_JOIN;
-                
+            #if COSE_ENABLED
                 //Initialise security before coap messages
                 cn_cbor_context context = {.calloc_func = &calloc_fn, .free_func = &free_fn, .context = NULL};
                 objsec_init(context);
                 printf("Objsec sucessfully inited\n");
+            #endif
 
+            #if COAP_ENABLED
                 //Configure CoAP
                 // Initialize the CoAP protocol handle, pointing to local implementations on malloc/free/tx/rx functions
                 coapHandle = sn_coap_protocol_init(&coap_malloc, &coap_free, &coap_tx_cb, &coap_rx_cb);
+            #endif
 
-            #ifdef BUTTON_ENABLE
+            #if BUTTON_ENABLE
                 button.rise(&sendDebugMessage);  // call toggle function on the rising edge
             #endif
 
@@ -359,6 +369,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
             sendFrame(20, payload, 5);
             break;
         }
+#if HECOMM_ENABLED
     case 254:   //HeComm commands
         {
             gDebugSerial.printf("McpsIndication: command on HeCOMM; Rx:%i, BufSize: %i\n", mcpsIndication->RxData, mcpsIndication->BufferSize);
@@ -368,8 +379,10 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                     printf("Key lenght does not match!: %u\r\n", mcpsIndication->BufferSize);
                     break;
                 }
+            #if COSE_ENABLED
                 objsec_set_key(mcpsIndication->Buffer);
                 gDebugSerial.printf("McpsIndication: command on HeCOMM; configured new key!\n");
+            #endif
             }
             break;
             
@@ -377,9 +390,10 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     case 255:   //HeComm communication
         {
             uint8_t buffer[128];
+            int16_t length;
             gDebugSerial.printf("McpsIndication: request on HeCOMM\n");
             PRINTBUF(mcpsIndication->Buffer, 0, mcpsIndication->BufferSize);
-            int16_t length = compileResponse(buffer, 128, mcpsIndication->Buffer, mcpsIndication->BufferSize);
+            length = compileResponse(buffer, 128, mcpsIndication->Buffer, mcpsIndication->BufferSize);
             if(length < 0){
                 printf("Unable to compile response\r\n");
                 break;
@@ -392,6 +406,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
             gDevState = DEV_STATE_SEND;
             break;
         }
+#endif
     default:
         gDebugSerial.printf("McpsIndication: indication on UNKNOWN port: %i\n", mcpsIndication->Port);
         break;
@@ -424,6 +439,8 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
     size_t payloadLength = 12;
     int16_t encryptedLength = 0;
     uint16_t messageLength = 0;
+
+#if COAP_ENABLED
     sn_coap_hdr_s *coap_res_ptr = NULL;
 
     //Expect coap packet
@@ -453,13 +470,14 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
         printf("Did not receive a correct coap packet!\r\n");
         return -1;
     }
+#endif
     //TODO: check if request contains the right resource, for now always send the resource
 
     gDebugSerial.printf("Compiling response...\n");
     // Path to the resource we want to retrieve
 
     //Encrypting message
-    
+#if COSE_ENABLED
     printf("Encrypting... provided buffer of size: %u\r\n", bufferSize);
     encryptedLength = encrypt(buffer,bufferSize, (const uint8_t *) payload,payloadLength);
     if(0 > encryptedLength){
@@ -468,10 +486,12 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
     }else{
         printf("Encrypted message of size: %u\r\n", encryptedLength);
     }
+#endif
     //Creating coap header/packet
     // See ns_coap_header.h
     //sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
     //sn_coap_hdr_s *coap_res_ptr = sn_coap_parser_alloc_message(coapHandle);
+#if COAP_ENABLED
     coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_VALID );
     if(NULL == coap_res_ptr){
         printf("Unable to allocate COAP message\r\n");
@@ -505,11 +525,13 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
 
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
+#endif
     return messageLength;
     
 
 errorReturn:
     //Compile negative response
+#if COAP_ENABLED
     coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_INTERNAL_SERVER_ERROR);
     if(NULL == coap_res_ptr){
         printf("Unable to allocate bad response COAP message\r\n");
@@ -531,6 +553,7 @@ errorReturn:
     }
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, parsed);
     sn_coap_parser_release_allocated_coap_msg_mem(coapHandle, coap_res_ptr);
+#endif
     return messageLength;
 }
 

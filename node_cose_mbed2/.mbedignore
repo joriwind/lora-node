@@ -62,4 +62,9 @@ mbedtls/src/pkwrite.c
 mbedtls/src/x509write_csr.c          
 mbedtls/src/xtea.c
 
-
+#mbedtls/*
+#mbedcoap/*
+#cose-c/*
+#cn-cbor/*
+#include/obj-sec.h
+#src/obj-sec.c
