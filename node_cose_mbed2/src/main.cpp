@@ -492,7 +492,7 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
     //sn_coap_hdr_s *coap_res_ptr = (sn_coap_hdr_s*)calloc(sizeof(sn_coap_hdr_s), 1);
     //sn_coap_hdr_s *coap_res_ptr = sn_coap_parser_alloc_message(coapHandle);
 #if COAP_ENABLED
-    coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_VALID );
+    coap_res_ptr = sn_coap_build_response(coapHandle,parsed,COAP_MSG_CODE_RESPONSE_CONTENT );
     if(NULL == coap_res_ptr){
         printf("Unable to allocate COAP message\r\n");
         goto errorReturn;
