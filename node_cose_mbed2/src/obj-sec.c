@@ -80,7 +80,7 @@ int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size
     PRINTF("Could not allocate algorithm object: %u\n", cnerr.err);
   }
 
-  if(!COSE_Encrypt_map_put_int(objcose, COSE_Header_Algorithm, algorithm, COSE_DONT_SEND, &err)){
+  if(!COSE_Encrypt_map_put_int(objcose, COSE_Header_Algorithm, algorithm, COSE_PROTECT_ONLY, &err)){
     PRINTF("Error in setting algorithm %i\n", err.err);
     goto errorReturn;
   }
