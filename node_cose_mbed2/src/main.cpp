@@ -377,7 +377,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                 //heCommSetSessionKey(mcpsIndication->Buffer, mcpsIndication->BufferSize);
                 if(mcpsIndication->BufferSize != 16){
                     printf("Key lenght does not match!: %u\r\n", mcpsIndication->BufferSize);
-                    break;
+                    //break;
                 }
             #if COSE_ENABLED
                 objsec_set_key(mcpsIndication->Buffer);
