@@ -81,12 +81,10 @@ coap_version_e coapVersion = COAP_VERSION_1;
 void* coap_malloc(uint16_t size) {
     void *ptr;
     ptr = malloc(size);
-    printf("Coap: malloc size: %u, p:%p\r\n", size, ptr);
     return ptr;
 }
  
 void coap_free(void* addr) {
-    printf("Coap: free %p\r\n", addr);
     free(addr);
 }
 
@@ -453,7 +451,7 @@ int16_t compileResponse(uint8_t *resp, size_t respSize, uint8_t *rxBuffer, size_
         printf("\tmsg_code:         %d\r\n", parsed->msg_code);
 
         std::string payload((const char*)parsed->payload_ptr, parsed->payload_len);
-        printf("\tpayload_len:      %d\r\n", parsed->payload_len);
+        printf("\tpayload_len:      %d\r\n", 12);
         printf("\tpayload:          %s\r\n", payload.c_str());
 
         std::string uri((const char*)parsed->uri_path_ptr, parsed->uri_path_len);
@@ -605,13 +603,11 @@ void * calloc_fn(size_t count, size_t size, void *context){
     //return mbed_ualloc(size * count, [UALLOC_TRAITS_NEVER_FREE, UALLOC_TRAITS_ZERO_FILL]);
     void *ptr;
     ptr = calloc(count, size);
-    printf("fn calloc: s: %u, c: %u, p: %p\r\n", size, count, ptr);
     return ptr;
 }
 
 //typedef void (*cn_free_func)(void *ptr, void *context);
 void free_fn(void *ptr, void *context){
     //mbed_ufree(ptr);
-    printf("fn free: p: %p\r\n", ptr);
     free(ptr);
 }

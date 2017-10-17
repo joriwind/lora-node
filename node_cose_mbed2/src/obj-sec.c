@@ -66,13 +66,13 @@ int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size
     PRINTF("Error in init cose: %i\n", err.err);
     return -1;
   }
-  printf("Init done!\n");
+  //printf("Init done!\n");
 
   if( !COSE_Encrypt_SetContent(objcose, message, len, &err)){
     PRINTF("Error in set content cose: %i\n",err.err);
     goto errorReturn;
   }
-  printf("Setcontent done!\n");
+  //printf("Setcontent done!\n");
 
 
   algorithm = cn_cbor_int_create(COSE_Algorithm_AES_CCM_16_64_128, &ctx, &cnerr);
@@ -84,14 +84,14 @@ int16_t encrypt(uint8_t *buffer, uint16_t bufferSz, const uint8_t *message, size
     PRINTF("Error in setting algorithm %i\n", err.err);
     goto errorReturn;
   }
-  PRINTF("Algorithm set!\n");
+  //PRINTF("Algorithm set!\n");
 
   //Setting AAD
   if(!COSE_Encrypt_SetExternal(objcose, temp, temp_len, &err)){
     PRINTF("Error in setting AAD %i\n", err.err);
     goto errorReturn;
   }
-  PRINTF("AAD set\n");
+  //PRINTF("AAD set\n");
 
   if( !COSE_Encrypt_encrypt(objcose, key, OBJ_SEC_KEYSIZE, &err)){
     PRINTF("Error in encrypt cose: %i\n", err.err);
