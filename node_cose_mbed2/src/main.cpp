@@ -575,12 +575,13 @@ bool sendFrame( uint8_t port, uint8_t* payload, int size )
     else
     {
 
-        mcpsReq.Type = MCPS_CONFIRMED;  //Confirmed message
-        mcpsReq.Req.Confirmed.fPort = port;
-        mcpsReq.Req.Confirmed.fBuffer = payload;
-        mcpsReq.Req.Confirmed.fBufferSize = size;
-        mcpsReq.Req.Confirmed.NbTrials = 8;
-        mcpsReq.Req.Confirmed.Datarate = DR_0;
+        //mcpsReq.Type = MCPS_CONFIRMED;  //Confirmed message
+        mcpsReq.Type = MCPS_UNCONFIRMED;
+        mcpsReq.Req.Unconfirmed.fPort = port;
+        mcpsReq.Req.Unconfirmed.fBuffer = payload;
+        mcpsReq.Req.Unconfirmed.fBufferSize = size;
+        //mcpsReq.Req.Unconfirmed.NbTrials = 8;
+        //mcpsReq.Req.Unconfirmed.Datarate = DR_0;
     }
 
     //gDebugSerial.printf("sendFrame: Sending message, payload size %i\n!", size);
